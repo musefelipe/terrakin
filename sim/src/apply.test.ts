@@ -1,0 +1,217 @@
+import { describe, expect, it } from "vitest";
+import { apply } from "./apply";
+import { hashWorld } from "./hash";
+import { replay } from "./replay";
+import type { Command, Input, WorldConfig, WorldState } from "./types";
+import { createWorld, spawnTile } from "./world";
+
+// 3x3 plots of 4 tiles. Commons is plot (1,1), tiles 4..7. Spawn is tile (6,6).
+const CONFIG: WorldConfig = {
+  width: 12,
+  height: 12,
+  plotSize: 4,
+  maxPlotsPerResident: 1,
+  reach: 2,
+};
+
+function run(state: WorldState, actor: string, ...commands: Command[]) {
+  return commands.map((command) => apply(state, { actor, command }));
+}
+
+function joined(...names: string[]): WorldState {
+  const state = createWorld(CONFIG);
+  for (const name of names) run(state, name, { type: "join", name, kind: "human" });
+  return state;
+}
+
+/** Walk `actor` from spawn (6,6) to (2,2), inside plot (0,0). */
+function walkToPlotZero(state: WorldState, actor: string) {
+  const steps: Command[] = [];
+  for (let i = 0; i < 4; i++) steps.push({ type: "move", dir: "w" }, { type: "move", dir: "n" });
+  const results = run(state, actor, ...steps);
+  expect(results.every((r) => r.ok)).toBe(true);
+}
+
+function rejectionCode(result: ReturnType<typeof apply>) {
+  return result.ok ? null : result.rejection.code;
+}
+
+describe("join and leave", () => {
+  it("spawns new residents in the Commons", () => {
+    const state = joined("ada");
+    expect(state.residents.ada).toMatchObject({ ...spawnTile(CONFIG), online: true });
+  });
+
+  it("rejects a second join and actions before joining", () => {
+    const state = joined("ada");
+    expect(
+      rejectionCode(
+        apply(state, { actor: "ada", command: { type: "join", name: "x", kind: "human" } }),
+      ),
+    ).toBe("already_joined");
+    expect(rejectionCode(apply(state, { actor: "bob", command: { type: "move", dir: "n" } }))).toBe(
+      "not_joined",
+    );
+  });
+
+  it("validates names", () => {
+    const state = createWorld(CONFIG);
+    expect(
+      rejectionCode(
+        apply(state, { actor: "a", command: { type: "join", name: "   ", kind: "agent" } }),
+      ),
+    ).toBe("invalid_name");
+    expect(
+      rejectionCode(
+        apply(state, {
+          actor: "a",
+          command: { type: "join", name: "x".repeat(25), kind: "agent" },
+        }),
+      ),
+    ).toBe("invalid_name");
+  });
+
+  it("returning residents keep their spot", () => {
+    const state = joined("ada");
+    run(state, "ada", { type: "move", dir: "e" }, { type: "leave" });
+    expect(state.residents.ada?.online).toBe(false);
+    run(state, "ada", { type: "join", name: "ada", kind: "human" });
+    expect(state.residents.ada).toMatchObject({ x: 7, y: 6, online: true });
+  });
+});
+
+describe("move", () => {
+  it("stops at the edge of the world", () => {
+    const state = joined("ada");
+    const results = run(
+      state,
+      "ada",
+      ...Array.from({ length: 7 }, () => ({ type: "move", dir: "n" }) as const),
+    );
+    expect(results.slice(0, 6).every((r) => r.ok)).toBe(true);
+    expect(rejectionCode(results[6] as ReturnType<typeof apply>)).toBe("out_of_bounds");
+    expect(state.residents.ada?.y).toBe(0);
+  });
+
+  it("cannot walk through blocks", () => {
+    const state = joined("ada");
+    walkToPlotZero(state, "ada");
+    run(state, "ada", { type: "claim" }, { type: "place", x: 2, y: 1, block: "stone" });
+    expect(rejectionCode(apply(state, { actor: "ada", command: { type: "move", dir: "n" } }))).toBe(
+      "blocked",
+    );
+  });
+});
+
+describe("claim", () => {
+  it("claims the plot you stand on", () => {
+    const state = joined("ada");
+    walkToPlotZero(state, "ada");
+    const [result] = run(state, "ada", { type: "claim" });
+    expect(result).toMatchObject({
+      ok: true,
+      events: [{ type: "plot_claimed", px: 0, py: 0, ownerId: "ada" }],
+    });
+  });
+
+  it("refuses the Commons", () => {
+    const state = joined("ada");
+    expect(rejectionCode(apply(state, { actor: "ada", command: { type: "claim" } }))).toBe(
+      "plot_is_commons",
+    );
+  });
+
+  it("refuses an owned plot and enforces the per-resident limit", () => {
+    const state = joined("ada", "bob");
+    walkToPlotZero(state, "ada");
+    walkToPlotZero(state, "bob");
+    run(state, "ada", { type: "claim" });
+    expect(rejectionCode(apply(state, { actor: "bob", command: { type: "claim" } }))).toBe(
+      "plot_owned",
+    );
+    // Ada walks into plot (0,1) and tries a second claim.
+    run(state, "ada", { type: "move", dir: "s" }, { type: "move", dir: "s" });
+    expect(rejectionCode(apply(state, { actor: "ada", command: { type: "claim" } }))).toBe(
+      "plot_limit",
+    );
+  });
+});
+
+describe("place and remove", () => {
+  it("builds only on your own plot, within reach, on empty tiles", () => {
+    const state = joined("ada", "bob");
+    walkToPlotZero(state, "ada");
+    run(state, "ada", { type: "claim" });
+
+    const place = (actor: string, x: number, y: number) =>
+      rejectionCode(apply(state, { actor, command: { type: "place", x, y, block: "wood" } }));
+
+    expect(place("ada", 0, 0)).toBeNull();
+    expect(place("ada", 0, 0)).toBe("tile_occupied");
+    expect(place("ada", 2, 2)).toBe("tile_occupied"); // Ada is standing there.
+    expect(place("ada", 5, 2)).toBe("out_of_reach");
+    expect(place("ada", 4, 2)).toBe("not_your_plot");
+    expect(place("ada", -1, 0)).toBe("out_of_bounds");
+    expect(place("bob", 6, 5)).toBe("not_your_plot"); // The Commons.
+  });
+
+  it("removes blocks and reports missing ones", () => {
+    const state = joined("ada");
+    walkToPlotZero(state, "ada");
+    run(state, "ada", { type: "claim" }, { type: "place", x: 1, y: 1, block: "glass" });
+    expect(apply(state, { actor: "ada", command: { type: "remove", x: 1, y: 1 } }).ok).toBe(true);
+    expect(
+      rejectionCode(apply(state, { actor: "ada", command: { type: "remove", x: 1, y: 1 } })),
+    ).toBe("no_block");
+  });
+
+  it("moves a returning resident to spawn if their spot was built over", () => {
+    const state = joined("ada", "bob");
+    walkToPlotZero(state, "ada");
+    walkToPlotZero(state, "bob");
+    run(state, "ada", { type: "claim" });
+    run(state, "bob", { type: "move", dir: "w" }, { type: "leave" }); // Bob parks on (1,2) and logs off.
+    expect(
+      apply(state, { actor: "ada", command: { type: "place", x: 1, y: 2, block: "stone" } }).ok,
+    ).toBe(true);
+    run(state, "bob", { type: "join", name: "bob", kind: "human" });
+    expect(state.residents.bob).toMatchObject(spawnTile(CONFIG));
+  });
+});
+
+describe("determinism", () => {
+  it("rejections never mutate state", () => {
+    const state = joined("ada");
+    const before = hashWorld(state);
+    run(
+      state,
+      "ada",
+      { type: "claim" },
+      { type: "remove", x: 0, y: 0 },
+      { type: "join", name: "a", kind: "human" },
+    );
+    expect(hashWorld(state)).toBe(before);
+  });
+
+  it("replaying the accepted log reproduces the world exactly", () => {
+    const state = createWorld(CONFIG);
+    const log: Input[] = [];
+    const script: Input[] = [
+      { actor: "ada", command: { type: "join", name: "ada", kind: "human" } },
+      { actor: "bot", command: { type: "join", name: "helper", kind: "agent" } },
+      ...Array.from({ length: 4 }, (): Input[] => [
+        { actor: "ada", command: { type: "move", dir: "w" } },
+        { actor: "ada", command: { type: "move", dir: "n" } },
+      ]).flat(),
+      { actor: "ada", command: { type: "claim" } },
+      { actor: "ada", command: { type: "place", x: 3, y: 3, block: "leaf" } },
+      { actor: "bot", command: { type: "claim" } }, // Rejected: Commons. Must not enter the log.
+      { actor: "bot", command: { type: "leave" } },
+    ];
+    for (const input of script) if (apply(state, input).ok) log.push(input);
+
+    expect(log).toHaveLength(script.length - 1);
+    expect(state.seq).toBe(log.length);
+    expect(hashWorld(replay(CONFIG, log))).toBe(hashWorld(state));
+  });
+});
