@@ -1,0 +1,13 @@
+{
+  "name": "@terrakin/sim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic simulation core for Terrakin. Pure TypeScript, no I/O, no clocks, no randomness outside the seeded RNG.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

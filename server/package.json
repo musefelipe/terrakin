@@ -1,0 +1,22 @@
+{
+  "name": "@terrakin/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Authoritative Terrakin server: REST + WebSocket API v1 over the deterministic sim.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@terrakin/protocol": "workspace:*",
+    "@terrakin/sim": "workspace:*",
+    "tsx": "4.23.15",
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/ws": "^8.18.2"
+  }
+}

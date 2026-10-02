@@ -9,3 +9,6 @@ coverage/
 __pycache__/
 *.pyc
 .venv/
+*.tsbuildinfo
+.vite/
+.claude/settings.local.json

@@ -1,0 +1,20 @@
+{
+  "name": "@terrakin/client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mobile-first web client for Terrakin. Renders what the server says; decides nothing.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc -p tsconfig.json && vite build",
+    "preview": "vite preview --host",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@terrakin/protocol": "workspace:*",
+    "@terrakin/sim": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "8.3.2"
+  }
+}
