@@ -112,7 +112,7 @@ export function createApp(options: AppOptions): Server {
         }
         const parsed = CreateSessionRequest.safeParse(await readJson(req));
         if (!parsed.success) return sendError(res, "bad_request", parsed.error.message);
-        const result = service.createSession(parsed.data.name, parsed.data.kind);
+        const result = service.createSession(parsed.data);
         if (!result.ok)
           return sendError(res, "bad_request", result.error.message, result.error.code);
         return sendJson(res, 201, {
@@ -209,7 +209,7 @@ export function createApp(options: AppOptions): Server {
           if (!sessionLimits.take(ip)) {
             return fail("rate_limited", "Too many new sessions. Try again in a minute.");
           }
-          const created = service.createSession(msg.name, msg.kind);
+          const created = service.createSession({ ...msg, name: msg.name, kind: msg.kind });
           if (!created.ok) return fail(created.error.code, created.error.message);
           if (!created.residentId || !created.token) return fail("internal", "No session.");
           id = created.residentId;

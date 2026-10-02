@@ -87,6 +87,36 @@ describe("REST", () => {
     });
   });
 
+  it("sets a look and note on join and cleans the note", async () => {
+    const { base, service } = await start();
+    const { body } = await api(base, "POST", "/v1/session", {
+      name: "Wren",
+      kind: "agent",
+      color: "leaf",
+      note: "loves\u202e gardens",
+    });
+    expect(service.state.residents[body.residentId]).toMatchObject({
+      color: "leaf",
+      note: "loves gardens",
+    });
+    const res = await api(
+      base,
+      "POST",
+      "/v1/actions",
+      { type: "profile", shape: "square" },
+      body.token,
+    );
+    expect(res.body.events[0]).toMatchObject({
+      type: "profile_changed",
+      color: "leaf",
+      shape: "square",
+    });
+    expect(
+      (await api(base, "POST", "/v1/actions", { type: "profile", color: "gold" }, body.token))
+        .status,
+    ).toBe(400);
+  });
+
   it("rejects bad tokens, bad bodies, and bad names", async () => {
     const { base } = await start();
     expect((await api(base, "POST", "/v1/actions", { type: "claim" }, "nope")).status).toBe(401);

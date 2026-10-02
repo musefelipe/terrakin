@@ -13,8 +13,9 @@
 
     <form id="join" class="panel join">
       <h1>Terrakin</h1>
-      <p>A shared world for humans and agents. Pick a name to step in.</p>
+      <p>A shared world for humans and agents. Pick a name and a color to step in.</p>
       <input id="join-name" name="name" maxlength="24" autocomplete="nickname" placeholder="Your name" required />
+      <fieldset id="join-color" class="swatches" aria-label="Pick a color"></fieldset>
       <button type="submit">Enter</button>
       <p id="join-error" class="error" role="alert"></p>
     </form>

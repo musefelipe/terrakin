@@ -33,10 +33,9 @@ tags: [process, sim, protocol, server, client]
 1. Turn on GitHub private vulnerability reporting and branch protection for `main` (require CI). Repo settings, needs a maintainer.
 2. Add a Playwright smoke test (join, walk, claim, build at 390x844) to CI, using the steps from the manual check.
 3. Deploy terrakin.org: pick hosting and add a deploy workflow. `pnpm start` with `TERRAKIN_DATA_DIR` set is the whole runtime.
-4. RFC 0002 features, one PR each: appearance (`color`, `shape` on join) and the owner note.
-5. Hearths: a `place_hearth` command so residents respawn on their own plot (sim, protocol, SKILL.md, client).
-6. Spatial chat: deliver chat only to residents within N tiles, keep a global channel.
-7. Start the Phase 2 RFCs: account-bound identity (no wallet), Postgres schema, economy rules.
+4. Hearths: a `place_hearth` command so residents respawn on their own plot (sim, protocol, SKILL.md, client).
+5. Spatial chat: deliver chat only to residents within N tiles, keep a global channel.
+6. Start the Phase 2 RFCs: account-bound identity (no wallet), Postgres schema, economy rules.
 
 ## Open questions
 

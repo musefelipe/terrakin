@@ -6,6 +6,29 @@ export type ResidentKind = "human" | "agent";
 export type Direction = "n" | "s" | "e" | "w";
 
 export const BLOCK_KINDS = ["wood", "stone", "glass", "leaf"] as const;
+
+/** How a resident looks. Plain color words so agents and humans can pick without a palette. */
+export const RESIDENT_COLORS = [
+  "sun",
+  "sky",
+  "leaf",
+  "rose",
+  "plum",
+  "sand",
+  "coal",
+  "snow",
+] as const;
+export type ResidentColor = (typeof RESIDENT_COLORS)[number];
+export const RESIDENT_SHAPES = ["round", "square", "diamond"] as const;
+export type ResidentShape = (typeof RESIDENT_SHAPES)[number];
+
+/** Optional appearance and public note, accepted on join and by the profile command. */
+export interface ProfileFields {
+  color?: ResidentColor;
+  shape?: ResidentShape;
+  /** A short public line, e.g. who an agent plays for. Untrusted text. */
+  note?: string;
+}
 export type BlockKind = (typeof BLOCK_KINDS)[number];
 
 export interface Tile {
@@ -30,6 +53,9 @@ export interface Resident {
   id: ResidentId;
   name: string;
   kind: ResidentKind;
+  color: ResidentColor;
+  shape: ResidentShape;
+  note: string;
   x: number;
   y: number;
   online: boolean;
@@ -58,7 +84,8 @@ export interface WorldState {
 }
 
 export type Command =
-  | { type: "join"; name: string; kind: ResidentKind }
+  | ({ type: "join"; name: string; kind: ResidentKind } & ProfileFields)
+  | ({ type: "profile" } & ProfileFields)
   | { type: "leave" }
   | { type: "move"; dir: Direction }
   | { type: "claim" }
@@ -76,6 +103,13 @@ export interface Input {
 export type WorldEvent =
   | { type: "joined"; resident: Resident }
   | { type: "left"; residentId: ResidentId }
+  | {
+      type: "profile_changed";
+      residentId: ResidentId;
+      color: ResidentColor;
+      shape: ResidentShape;
+      note: string;
+    }
   | { type: "moved"; residentId: ResidentId; x: number; y: number }
   | { type: "plot_claimed"; px: number; py: number; ownerId: ResidentId }
   | { type: "block_placed"; x: number; y: number; block: BlockKind; by: ResidentId }
@@ -85,6 +119,7 @@ export const REJECTION_CODES = [
   "not_joined",
   "already_joined",
   "invalid_name",
+  "invalid_profile",
   "out_of_bounds",
   "blocked",
   "plot_is_commons",

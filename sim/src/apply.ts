@@ -1,14 +1,18 @@
+import { fnv1a } from "./hash";
 import { plotKey, tileKey } from "./keys";
 import type {
   ApplyResult,
   Command,
   Direction,
   Input,
+  ProfileFields,
   Rejection,
   RejectionCode,
+  Resident,
   WorldEvent,
   WorldState,
 } from "./types";
+import { RESIDENT_COLORS, RESIDENT_SHAPES } from "./types";
 import {
   chebyshev,
   inBounds,
@@ -21,6 +25,7 @@ import {
 } from "./world";
 
 export const NAME_MAX_LENGTH = 24;
+export const NOTE_MAX_LENGTH = 80;
 
 const STEP: Record<Direction, [number, number]> = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 
@@ -37,6 +42,34 @@ const reject = (code: RejectionCode, message: string): Prepared => ({
   ok: false,
   rejection: { code, message },
 });
+
+/** A stable starting look derived from the id, so new residents don't all look alike. */
+function defaultLook(id: string): Pick<Resident, "color" | "shape"> {
+  const h = Number.parseInt(fnv1a(id), 16);
+  return {
+    color: RESIDENT_COLORS[h % RESIDENT_COLORS.length] ?? "sun",
+    shape:
+      RESIDENT_SHAPES[Math.floor(h / RESIDENT_COLORS.length) % RESIDENT_SHAPES.length] ?? "round",
+  };
+}
+
+/** Validate profile fields and merge them over `base`. Returns a rejection or the merged look. */
+function mergeProfile(
+  base: Pick<Resident, "color" | "shape" | "note">,
+  fields: ProfileFields,
+): Pick<Resident, "color" | "shape" | "note"> | Prepared {
+  const note = fields.note === undefined ? base.note : fields.note.trim();
+  if (note.length > NOTE_MAX_LENGTH) {
+    return reject("invalid_profile", `Notes can be at most ${NOTE_MAX_LENGTH} characters.`);
+  }
+  if (fields.color !== undefined && !RESIDENT_COLORS.includes(fields.color)) {
+    return reject("invalid_profile", "Unknown color.");
+  }
+  if (fields.shape !== undefined && !RESIDENT_SHAPES.includes(fields.shape)) {
+    return reject("invalid_profile", "Unknown shape.");
+  }
+  return { color: fields.color ?? base.color, shape: fields.shape ?? base.shape, note };
+}
 
 /**
  * Check an input against the rules without changing anything.
@@ -88,10 +121,13 @@ function check(state: WorldState, actor: string, command: Command): Mutation | P
     // Returning residents keep their spot unless someone built on it while they were away.
     const spawn = spawnTile(config);
     const keepSpot = me !== undefined && !isSolid(state, me.x, me.y);
-    const resident = {
+    const look = mergeProfile(me ?? { ...defaultLook(actor), note: "" }, command);
+    if ("ok" in look) return look;
+    const resident: Resident = {
       id: actor,
       name,
       kind: command.kind,
+      ...look,
       x: keepSpot ? me.x : spawn.x,
       y: keepSpot ? me.y : spawn.y,
       online: true,
@@ -110,6 +146,15 @@ function check(state: WorldState, actor: string, command: Command): Mutation | P
         me.online = false;
         return [{ type: "left", residentId: actor }];
       };
+
+    case "profile": {
+      const look = mergeProfile(me, command);
+      if ("ok" in look) return look;
+      return () => {
+        Object.assign(me, look);
+        return [{ type: "profile_changed", residentId: actor, ...look }];
+      };
+    }
 
     case "move": {
       const [dx, dy] = STEP[command.dir];

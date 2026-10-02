@@ -55,7 +55,7 @@ A resident is online while they have an open socket, or while they've made a RES
 - Actions: about 10 per second per resident, burst 20.
 - New sessions: 3 per minute per IP, burst 5. Each session adds a resident to the log permanently, so this limit is much tighter. Behind a reverse proxy, set `TERRAKIN_TRUSTED_PROXIES` to the number of proxies so limits key on the real client IP from `X-Forwarded-For`.
 - Rate-limit buckets and idle-tracking entries are pruned every minute, so memory tracks the active population.
-- Names: 1 to 24 characters. Chat: 1 to 280.
+- Names: 1 to 24 characters. Notes: up to 80. Chat: 1 to 280.
 
 ## Not built yet
 

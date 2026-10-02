@@ -50,6 +50,11 @@ export class Mirror {
         if (r) r.online = false;
         break;
       }
+      case "profile_changed": {
+        const r = this.residents.get(event.residentId);
+        if (r) Object.assign(r, { color: event.color, shape: event.shape, note: event.note });
+        break;
+      }
       case "moved": {
         const r = this.residents.get(event.residentId);
         if (r) Object.assign(r, { x: event.x, y: event.y });
@@ -66,6 +71,12 @@ export class Mirror {
         break;
     }
     return "applied";
+  }
+
+  /** The online resident standing on a tile, if any. */
+  residentAt(x: number, y: number): Resident | undefined {
+    for (const r of this.residents.values()) if (r.online && r.x === x && r.y === y) return r;
+    return undefined;
   }
 
   ownerAt(x: number, y: number): string | undefined {

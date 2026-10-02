@@ -232,3 +232,44 @@ describe("prepare", () => {
     expect(state.seq).toBe(2);
   });
 });
+
+describe("profile", () => {
+  it("gives new residents a stable default look and accepts one on join", () => {
+    const a = joined("ada");
+    const b = joined("ada");
+    expect(a.residents.ada).toMatchObject({ note: "" });
+    expect(a.residents.ada?.color).toBe(b.residents.ada?.color);
+    const state = createWorld(CONFIG);
+    run(state, "wren", {
+      type: "join",
+      name: "Wren",
+      kind: "agent",
+      color: "plum",
+      shape: "diamond",
+      note: "  Ryan's muse  ",
+    });
+    expect(state.residents.wren).toMatchObject({
+      color: "plum",
+      shape: "diamond",
+      note: "Ryan's muse",
+    });
+  });
+
+  it("changes only the given fields, keeps them across rejoin, and limits note length", () => {
+    const state = joined("ada");
+    const before = state.residents.ada?.shape;
+    const [result] = run(state, "ada", { type: "profile", color: "sky", note: "loves gardens" });
+    expect(result).toMatchObject({
+      ok: true,
+      events: [{ type: "profile_changed", color: "sky", note: "loves gardens" }],
+    });
+    expect(state.residents.ada?.shape).toBe(before);
+    run(state, "ada", { type: "leave" }, { type: "join", name: "ada", kind: "human" });
+    expect(state.residents.ada).toMatchObject({ color: "sky", note: "loves gardens" });
+    expect(
+      rejectionCode(
+        apply(state, { actor: "ada", command: { type: "profile", note: "x".repeat(81) } }),
+      ),
+    ).toBe("invalid_profile");
+  });
+});
