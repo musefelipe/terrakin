@@ -3,7 +3,7 @@ import { type BlockKind, type Direction, RESIDENT_COLORS, type ResidentColor } f
 import { type Camera, fitScale, screenToTile, stepToward } from "./camera";
 import { Mirror } from "./mirror";
 import { Connection, savedToken } from "./net";
-import { blockColor, RESIDENT_COLOR_HEX, render } from "./render";
+import { blockColor, HEARTH_COLOR, RESIDENT_COLOR_HEX, render } from "./render";
 import "./style.css";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -25,7 +25,8 @@ let conn: Connection | undefined;
 let mirror: Mirror | undefined;
 let me: string | undefined;
 let buildMode = false;
-let block: BlockKind = "wood";
+/** Selected build tool: a block, or the hearth marker. */
+let block: BlockKind | "hearth" = "wood";
 let walkTarget: { x: number; y: number } | undefined;
 let pendingMove: string | undefined;
 let resyncing = false;
@@ -143,7 +144,8 @@ canvas.addEventListener("pointerdown", (e) => {
   const tile = screenToTile(cam, e.clientX, e.clientY);
   if (buildMode) {
     const hasBlock = mirror.blocks.has(`${tile.x},${tile.y}`);
-    act(hasBlock ? { type: "remove", ...tile } : { type: "place", ...tile, block });
+    if (block === "hearth") act({ type: "set_hearth", ...tile });
+    else act(hasBlock ? { type: "remove", ...tile } : { type: "place", ...tile, block });
     return;
   }
   // Tapping someone shows who they are. Names and notes are untrusted: textContent only.
@@ -187,8 +189,8 @@ buildButton.addEventListener("click", () => {
 });
 
 for (const button of palette.querySelectorAll<HTMLButtonElement>("button")) {
-  const kind = button.dataset.block as BlockKind;
-  button.style.background = blockColor(kind);
+  const kind = button.dataset.block as BlockKind | "hearth";
+  button.style.background = kind === "hearth" ? HEARTH_COLOR : blockColor(kind);
   button.addEventListener("click", () => {
     block = kind;
     for (const b of palette.querySelectorAll("button"))
@@ -196,6 +198,11 @@ for (const button of palette.querySelectorAll<HTMLButtonElement>("button")) {
   });
   if (kind === block) button.classList.add("selected");
 }
+
+$("home").addEventListener("click", () => {
+  walkTarget = undefined;
+  act({ type: "home" });
+});
 
 $("chat-toggle").addEventListener("click", () => {
   chatPanel.hidden = !chatPanel.hidden;

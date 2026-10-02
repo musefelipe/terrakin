@@ -63,6 +63,11 @@ export class Mirror {
       case "plot_claimed":
         this.plots.set(plotKey(event.px, event.py), event.ownerId);
         break;
+      case "hearth_set": {
+        const r = this.residents.get(event.residentId);
+        if (r) r.hearth = { x: event.x, y: event.y };
+        break;
+      }
       case "block_placed":
         this.blocks.set(tileKey(event.x, event.y), event.block);
         break;

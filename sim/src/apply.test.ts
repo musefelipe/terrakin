@@ -273,3 +273,56 @@ describe("profile", () => {
     ).toBe("invalid_profile");
   });
 });
+
+describe("hearth", () => {
+  function homeowner() {
+    const state = joined("ada");
+    walkToPlotZero(state, "ada");
+    run(state, "ada", { type: "claim" });
+    return state;
+  }
+
+  it("sets a hearth on your own plot and takes you home", () => {
+    const state = homeowner();
+    const [set] = run(state, "ada", { type: "set_hearth", x: 1, y: 1 });
+    expect(set).toMatchObject({ ok: true, events: [{ type: "hearth_set", x: 1, y: 1 }] });
+    run(state, "ada", { type: "move", dir: "e" }, { type: "move", dir: "e" });
+    const [home] = run(state, "ada", { type: "home" });
+    expect(home).toMatchObject({ ok: true, events: [{ type: "moved", x: 1, y: 1 }] });
+  });
+
+  it("rejects hearths off your plot, out of reach, on blocks, and home without one", () => {
+    const state = homeowner();
+    const code = (command: Command) => rejectionCode(apply(state, { actor: "ada", command }));
+    expect(code({ type: "home" })).toBe("no_hearth");
+    expect(code({ type: "set_hearth", x: 4, y: 2 })).toBe("not_your_plot");
+    expect(code({ type: "set_hearth", x: 2, y: 2 + 3 })).toBe("out_of_reach");
+    run(state, "ada", { type: "place", x: 0, y: 0, block: "stone" });
+    expect(code({ type: "set_hearth", x: 0, y: 0 })).toBe("tile_occupied");
+    run(state, "ada", { type: "set_hearth", x: 1, y: 1 });
+    expect(code({ type: "place", x: 1, y: 1, block: "stone" })).toBe("tile_occupied");
+  });
+
+  it("returns a resident to their hearth when their spot was built over", () => {
+    const state = joined("ada", "bob");
+    walkToPlotZero(state, "ada");
+    run(state, "ada", { type: "claim" }, { type: "set_hearth", x: 3, y: 3 });
+    // Bob claims plot (1,0); Ada wanders onto it and logs off; Bob builds where she stood.
+    run(state, "bob", ...Array.from({ length: 3 }, () => ({ type: "move", dir: "n" }) as const), {
+      type: "claim",
+    });
+    run(
+      state,
+      "ada",
+      { type: "move", dir: "e" },
+      { type: "move", dir: "e" },
+      { type: "move", dir: "e" },
+      { type: "leave" },
+    );
+    expect(
+      apply(state, { actor: "bob", command: { type: "place", x: 5, y: 2, block: "wood" } }).ok,
+    ).toBe(true);
+    run(state, "ada", { type: "join", name: "ada", kind: "human" });
+    expect(state.residents.ada).toMatchObject({ x: 3, y: 3 });
+  });
+});

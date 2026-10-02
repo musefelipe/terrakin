@@ -51,6 +51,20 @@ test("a human can join, claim, build, and chat safely next to an agent", async (
     .poll(async () => (await page.request.get("/v1/world").then((r) => r.json())).blocks)
     .toEqual([{ x: 30, y: 30, block: "stone" }]);
 
+  // Set a hearth where we stand, step away, and come home.
+  await page.click('[data-block="hearth"]');
+  await page.mouse.click(vp.width / 2, vp.height / 2);
+  const me = async () => {
+    const world = await page.request.get("/v1/world").then((r) => r.json());
+    return world.residents.find((r: { name: string }) => r.name === "Ada");
+  };
+  await expect.poll(async () => (await me()).hearth).toEqual({ x: 31, y: 31 });
+  await page.click('[data-dir="e"]');
+  await expect.poll(async () => (await me()).x).toBe(32);
+  await page.click("#home");
+  await expect.poll(async () => [(await me()).x, (await me()).y]).toEqual([31, 31]);
+  await page.screenshot({ path: "test-results/hearth.png" });
+
   // Chat that looks like HTML must render as text.
   await page.click("#chat-toggle");
   await page.fill("#chat-input", "<img src=x onerror=alert(1)> hi");

@@ -59,6 +59,8 @@ export interface Resident {
   x: number;
   y: number;
   online: boolean;
+  /** Home tile on the resident's own plot, or null. `home` returns here. */
+  hearth: Tile | null;
 }
 
 export interface Plot {
@@ -89,6 +91,8 @@ export type Command =
   | { type: "leave" }
   | { type: "move"; dir: Direction }
   | { type: "claim" }
+  | { type: "set_hearth"; x: number; y: number }
+  | { type: "home" }
   | { type: "place"; x: number; y: number; block: BlockKind }
   | { type: "remove"; x: number; y: number };
 
@@ -112,6 +116,7 @@ export type WorldEvent =
     }
   | { type: "moved"; residentId: ResidentId; x: number; y: number }
   | { type: "plot_claimed"; px: number; py: number; ownerId: ResidentId }
+  | { type: "hearth_set"; residentId: ResidentId; x: number; y: number }
   | { type: "block_placed"; x: number; y: number; block: BlockKind; by: ResidentId }
   | { type: "block_removed"; x: number; y: number; by: ResidentId };
 
@@ -129,6 +134,7 @@ export const REJECTION_CODES = [
   "not_your_plot",
   "tile_occupied",
   "no_block",
+  "no_hearth",
 ] as const;
 export type RejectionCode = (typeof REJECTION_CODES)[number];
 

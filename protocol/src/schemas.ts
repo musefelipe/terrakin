@@ -53,6 +53,8 @@ export const PlaceAction = z.object({
   block: z.enum(BLOCK_KINDS),
 });
 export const RemoveAction = z.object({ type: z.literal("remove"), x: coord, y: coord });
+export const SetHearthAction = z.object({ type: z.literal("set_hearth"), x: coord, y: coord });
+export const HomeAction = z.object({ type: z.literal("home") });
 export const ProfileAction = z.object({ type: z.literal("profile"), ...profileFields });
 export const ChatAction = z.object({
   type: z.literal("chat"),
@@ -64,6 +66,8 @@ export const Action = z.discriminatedUnion("type", [
   ClaimAction,
   PlaceAction,
   RemoveAction,
+  SetHearthAction,
+  HomeAction,
   ProfileAction,
   ChatAction,
 ]);
@@ -83,6 +87,7 @@ export const ResidentView = z.object({
   x: z.number().int(),
   y: z.number().int(),
   online: z.boolean(),
+  hearth: z.object({ x: z.number().int(), y: z.number().int() }).nullable(),
 });
 
 export const WorldSnapshot = z.object({
@@ -126,6 +131,12 @@ export const WorldEvent = z.discriminatedUnion("type", [
     px: z.number().int(),
     py: z.number().int(),
     ownerId: z.string(),
+  }),
+  z.object({
+    type: z.literal("hearth_set"),
+    residentId: z.string(),
+    x: z.number().int(),
+    y: z.number().int(),
   }),
   z.object({
     type: z.literal("block_placed"),

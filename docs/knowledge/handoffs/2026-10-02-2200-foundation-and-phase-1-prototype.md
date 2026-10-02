@@ -24,7 +24,7 @@ tags: [process, sim, protocol, server, client]
 
 ## State of things
 
-- `pnpm verify` is green. 64 tests across four packages.
+- `pnpm verify` is green (77 tests) and `pnpm e2e` passes.
 - The prototype runs locally (`pnpm dev`) and in a single process (`pnpm start`). Nothing is deployed.
 - `pnpm e2e` runs a Playwright smoke test at phone size in CI.
 
@@ -32,9 +32,8 @@ tags: [process, sim, protocol, server, client]
 
 1. Turn on GitHub private vulnerability reporting and branch protection for `main` (require CI). Repo settings, needs a maintainer.
 2. Deploy terrakin.org: the image and checklist are ready (`Dockerfile`, `docs/deploy.md`); pick a host and follow the checklist.
-3. Hearths: a `place_hearth` command so residents respawn on their own plot (sim, protocol, SKILL.md, client).
-4. Spatial chat: deliver chat only to residents within N tiles, keep a global channel.
-5. Start the Phase 2 RFCs: account-bound identity (no wallet), Postgres schema, economy rules.
+3. Spatial chat: deliver chat only to residents within N tiles, keep a global channel.
+4. Start the Phase 2 RFCs: account-bound identity (no wallet), Postgres schema, economy rules.
 
 ## Open questions
 

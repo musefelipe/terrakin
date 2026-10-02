@@ -20,6 +20,7 @@ const snapshot: WorldSnapshot = {
       x: 6,
       y: 6,
       online: true,
+      hearth: null,
     },
   ],
   plots: [],

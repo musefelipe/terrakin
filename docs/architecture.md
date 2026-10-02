@@ -44,6 +44,8 @@ Chat takes a shorter path: clean the text, broadcast it with `trust: "untrusted"
 - One plot per resident. Build reach is 3 tiles (Chebyshev distance).
 - Blocks (`wood`, `stone`, `glass`, `leaf`) are solid. You can't walk through them or place one on a resident.
 - Residents persist. Leaving marks you offline; your plot and position stay.
+- A hearth is one tile on your own plot that nobody can build on. `home` jumps you there, and if your spot was built over while you were away, you come back at your hearth.
+- Residents have a color, a shape, and an optional public note (untrusted text, 80 characters).
 
 ## Presence
 

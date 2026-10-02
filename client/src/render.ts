@@ -13,6 +13,8 @@ export function blockColor(block: BlockKind): string {
   return BLOCK_COLORS[block];
 }
 
+export const HEARTH_COLOR = "#e07a3f";
+
 export const RESIDENT_COLOR_HEX: Record<ResidentColor, string> = {
   sun: "#ffd166",
   sky: "#7ec8e3",
@@ -95,6 +97,21 @@ export function render(ctx: CanvasRenderingContext2D, { mirror, me, cam, buildMo
     ctx.fillRect(sx - half + 1, sy - half + 1, scale - 2, scale - 2);
     ctx.fillStyle = "rgba(0,0,0,0.15)";
     ctx.fillRect(sx - half + 1, sy + half - 4, scale - 2, 3);
+  }
+
+  // Hearths: a warm square with a roof, drawn under residents.
+  for (const r of mirror.residents.values()) {
+    if (!r.hearth) continue;
+    const { sx, sy } = tileToScreen(cam, r.hearth.x, r.hearth.y);
+    if (sx < -scale || sy < -scale || sx > width + scale || sy > height + scale) continue;
+    ctx.fillStyle = HEARTH_COLOR;
+    ctx.fillRect(sx - half * 0.6, sy - half * 0.2, scale * 0.6, half * 0.8);
+    ctx.beginPath();
+    ctx.moveTo(sx - half * 0.75, sy - half * 0.2);
+    ctx.lineTo(sx, sy - half * 0.8);
+    ctx.lineTo(sx + half * 0.75, sy - half * 0.2);
+    ctx.closePath();
+    ctx.fill();
   }
 
   const self = me ? mirror.residents.get(me) : undefined;

@@ -118,9 +118,10 @@ function check(state: WorldState, actor: string, command: Command): Mutation | P
     if (name.length < 1 || name.length > NAME_MAX_LENGTH) {
       return reject("invalid_name", `Names must be 1 to ${NAME_MAX_LENGTH} characters.`);
     }
-    // Returning residents keep their spot unless someone built on it while they were away.
-    const spawn = spawnTile(config);
+    // Returning residents keep their spot. If someone built on it while they were away, they go
+    // to their hearth, or to the Commons if they have none.
     const keepSpot = me !== undefined && !isSolid(state, me.x, me.y);
+    const spawn = me?.hearth ?? spawnTile(config);
     const look = mergeProfile(me ?? { ...defaultLook(actor), note: "" }, command);
     if ("ok" in look) return look;
     const resident: Resident = {
@@ -131,6 +132,7 @@ function check(state: WorldState, actor: string, command: Command): Mutation | P
       x: keepSpot ? me.x : spawn.x,
       y: keepSpot ? me.y : spawn.y,
       online: true,
+      hearth: me?.hearth ?? null,
     };
     return () => {
       state.residents[actor] = resident;
@@ -185,6 +187,32 @@ function check(state: WorldState, actor: string, command: Command): Mutation | P
       };
     }
 
+    case "set_hearth": {
+      const { x, y } = command;
+      if (!inBounds(config, x, y)) return reject("out_of_bounds", "That's outside the world.");
+      if (chebyshev(me, { x, y }) > config.reach) {
+        return reject("out_of_reach", `You can only build within ${config.reach} tiles.`);
+      }
+      if (plotAtTile(state, x, y)?.ownerId !== actor) {
+        return reject("not_your_plot", "Your hearth has to be on your own plot.");
+      }
+      if (isSolid(state, x, y)) return reject("tile_occupied", "A block is there.");
+      return () => {
+        me.hearth = { x, y };
+        return [{ type: "hearth_set", residentId: actor, x, y }];
+      };
+    }
+
+    case "home": {
+      const hearth = me.hearth;
+      if (!hearth) return reject("no_hearth", "Set a hearth on your plot first.");
+      return () => {
+        me.x = hearth.x;
+        me.y = hearth.y;
+        return [{ type: "moved", residentId: actor, x: hearth.x, y: hearth.y }];
+      };
+    }
+
     case "place":
     case "remove": {
       const { x, y } = command;
@@ -205,6 +233,9 @@ function check(state: WorldState, actor: string, command: Command): Mutation | P
       }
       if (state.blocks[key] !== undefined)
         return reject("tile_occupied", "A block is already there.");
+      if (me.hearth?.x === x && me.hearth.y === y) {
+        return reject("tile_occupied", "That's your hearth. Keep it clear.");
+      }
       const standingThere = Object.values(state.residents).some(
         (r) => r.online && r.x === x && r.y === y,
       );
