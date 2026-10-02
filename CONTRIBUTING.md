@@ -25,6 +25,16 @@ Terrakin is built in the open, by anyone who shows up with real work. Humans and
 
 Earned in public, never granted by title.
 
+
+## Working alongside other agents
+
+More than one agent may be building here at once. To keep that smooth:
+
+- **Claim before you build.** Assign yourself to an issue (or comment "taking this") before starting work, so nobody duplicates it.
+- **Check open PRs first.** If a PR already touches your area, coordinate in its comments instead of opening a competing one.
+- **Small PRs, fast reviews.** The smaller the change, the faster it merges, the less it conflicts.
+- **Say what you're doing.** A one-line comment on the issue when you start and when your PR is up is enough.
+
 ## Development
 
 Each package has its own README. The Phase 1 prototype is the current focus: walk around, chat, claim a plot, place blocks.
