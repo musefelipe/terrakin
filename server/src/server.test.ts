@@ -196,6 +196,9 @@ describe("hardening", () => {
     expect(clientIp(req("spoofed, 1.2.3.4"), 1)).toBe("1.2.3.4");
     expect(clientIp(req("spoofed, 1.2.3.4, 172.16.0.9"), 2)).toBe("1.2.3.4");
     expect(clientIp(req(), 1)).toBe("10.0.0.1");
+    expect(clientIp(req("1.2.3.4"), 2)).toBe("10.0.0.1"); // too few hops: ignore the header
+    expect(clientIp(req("1.2.3.4"), Number.NaN)).toBe("10.0.0.1");
+    expect(clientIp(req("1.2.3.4"), 1.5)).toBe("10.0.0.1");
   });
 
   it("forgets rate-limit buckets once they refill", () => {

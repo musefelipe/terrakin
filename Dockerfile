@@ -18,8 +18,9 @@ RUN --mount=type=secret,id=ca,required=false \
     NODE_EXTRA_CA_CERTS=/run/secrets/ca corepack enable \
  && NODE_EXTRA_CA_CERTS=/run/secrets/ca pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm build \
- && pnpm --filter @terrakin/server deploy --prod --legacy /out \
+RUN --mount=type=secret,id=ca,required=false \
+    pnpm build \
+ && NODE_EXTRA_CA_CERTS=/run/secrets/ca pnpm --filter @terrakin/server deploy --prod --legacy /out \
  && cp -r client/dist /out/public
 
 FROM ${NODE_IMAGE}
@@ -29,9 +30,11 @@ ENV NODE_ENV=production \
     TERRAKIN_STATIC_DIR=/app/public
 WORKDIR /app
 COPY --from=build /out .
+COPY scripts/docker/entrypoint.sh /usr/local/bin/terrakin-entrypoint
+# The entrypoint fixes /data ownership as root, then drops to the unprivileged `node` user.
 RUN mkdir -p /data && chown node:node /data
-USER node
 VOLUME /data
 EXPOSE 8787
 HEALTHCHECK --interval=30s --timeout=3s CMD node -e "fetch('http://localhost:'+process.env.PORT+'/v1/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+ENTRYPOINT ["terrakin-entrypoint"]
 CMD ["node_modules/.bin/tsx", "src/main.ts"]

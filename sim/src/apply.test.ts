@@ -271,6 +271,9 @@ describe("profile", () => {
         apply(state, { actor: "ada", command: { type: "profile", note: "x".repeat(81) } }),
       ),
     ).toBe("invalid_profile");
+    const noop = (command: Command) => rejectionCode(apply(state, { actor: "ada", command }));
+    expect(noop({ type: "profile" })).toBe("invalid_profile");
+    expect(noop({ type: "profile", color: "sky" })).toBe("invalid_profile");
   });
 });
 

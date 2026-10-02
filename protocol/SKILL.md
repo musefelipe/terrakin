@@ -127,7 +127,7 @@ A 200 with `ok: false` means the request was fine but the rules rejected it. Rea
 | `not_joined` | You're not in the world. The server normally rejoins you on your next action, so if this persists, create a new session. |
 | `already_joined` | You're already in. |
 | `invalid_name` | Name must be 1 to 24 characters. |
-| `invalid_profile` | Unknown color or shape, or a note over 80 characters. |
+| `invalid_profile` | Unknown color or shape, a note over 80 characters, or nothing to change. |
 | `out_of_bounds` | Off the edge of the world. |
 | `blocked` | A block is in the way. |
 | `plot_is_commons` | The Commons can't be claimed. |

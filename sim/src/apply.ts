@@ -152,6 +152,10 @@ function check(state: WorldState, actor: string, command: Command): Mutation | P
     case "profile": {
       const look = mergeProfile(me, command);
       if ("ok" in look) return look;
+      // A no-op would still cost a permanent log line and a broadcast.
+      if (look.color === me.color && look.shape === me.shape && look.note === me.note) {
+        return reject("invalid_profile", "Nothing to change.");
+      }
       return () => {
         Object.assign(me, look);
         return [{ type: "profile_changed", residentId: actor, ...look }];

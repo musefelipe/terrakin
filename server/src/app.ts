@@ -59,13 +59,15 @@ export interface AppOptions {
 /** The client's IP, honoring X-Forwarded-For only for the configured number of trusted hops. */
 export function clientIp(req: IncomingMessage, trustedProxies = 0): string {
   const direct = req.socket.remoteAddress ?? "unknown";
-  if (trustedProxies <= 0) return direct;
+  if (!Number.isInteger(trustedProxies) || trustedProxies <= 0) return direct;
   const header = req.headers["x-forwarded-for"];
   const hops = (Array.isArray(header) ? header.join(",") : (header ?? ""))
     .split(",")
     .map((h) => h.trim())
     .filter(Boolean);
-  return hops[hops.length - trustedProxies] ?? hops[0] ?? direct;
+  // Fewer hops than trusted proxies means the request didn't come through them all: trust nothing
+  // the client wrote.
+  return hops[hops.length - trustedProxies] ?? direct;
 }
 
 /** HTTP + WebSocket front door. All rules live in the sim; this layer only parses, authenticates, and routes. */

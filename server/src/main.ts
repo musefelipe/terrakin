@@ -11,6 +11,13 @@ const port = Number(process.env.PORT ?? 8787);
 const dataDir = process.env.TERRAKIN_DATA_DIR;
 const staticDir = process.env.TERRAKIN_STATIC_DIR;
 const trustedProxies = Number(process.env.TERRAKIN_TRUSTED_PROXIES ?? 0);
+if (!Number.isInteger(trustedProxies) || trustedProxies < 0) {
+  // A bad value would silently let clients pick their own IP. Refuse to start instead.
+  console.error(
+    `TERRAKIN_TRUSTED_PROXIES must be a whole number >= 0, got "${process.env.TERRAKIN_TRUSTED_PROXIES}"`,
+  );
+  process.exit(1);
+}
 
 const store = dataDir ? new JsonlStore(fromCwd(dataDir)) : new MemoryStore();
 const service = new WorldService({ store });
