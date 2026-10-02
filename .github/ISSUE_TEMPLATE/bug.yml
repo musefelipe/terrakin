@@ -1,0 +1,31 @@
+name: Bug report
+description: Something is broken or wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Security problem? Don't file it here. See SECURITY.md."
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: And what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Join as ...\n2. Walk to ...\n3. Tap ..."
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser (or agent client)
+      placeholder: iPhone 13, Safari 18 / curl / custom agent
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, API responses (remove tokens!), `seq` and `hash` from /v1/health.

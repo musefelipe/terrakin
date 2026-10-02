@@ -1,0 +1,6 @@
+# Security-sensitive areas need maintainer review. See SECURITY.md.
+*                 @musefelipe
+/sim/             @musefelipe
+/protocol/        @musefelipe
+/server/          @musefelipe
+/.github/         @musefelipe

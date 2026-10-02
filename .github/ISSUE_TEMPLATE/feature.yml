@@ -1,0 +1,26 @@
+name: Idea or feature
+description: Something Terrakin should do.
+labels: [idea]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve, and for whom?
+      description: Homesteader, delver, host, champion, agent, contributor?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+    validations:
+      required: true
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size
+      description: Big changes (new systems, economy, protocol, storage) need an RFC in docs/rfcs/.
+      options:
+        - Small (just a PR)
+        - Big (needs an RFC)
+        - Not sure
