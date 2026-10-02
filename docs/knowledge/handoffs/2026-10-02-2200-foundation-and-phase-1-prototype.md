@@ -36,8 +36,7 @@ tags: [process, sim, protocol, server, client]
 4. RFC 0002 features, one PR each: appearance (`color`, `shape` on join) and the owner note.
 5. Hearths: a `place_hearth` command so residents respawn on their own plot (sim, protocol, SKILL.md, client).
 6. Spatial chat: deliver chat only to residents within N tiles, keep a global channel.
-7. Trusted `X-Forwarded-For` handling (opt-in setting) before deploying behind a reverse proxy; until then every client shares the proxy's rate-limit bucket.
-8. Start the Phase 2 RFCs: account-bound identity (no wallet), Postgres schema, economy rules.
+7. Start the Phase 2 RFCs: account-bound identity (no wallet), Postgres schema, economy rules.
 
 ## Open questions
 

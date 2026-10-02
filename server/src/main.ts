@@ -6,10 +6,15 @@ import { WorldService } from "./world-service";
 const port = Number(process.env.PORT ?? 8787);
 const dataDir = process.env.TERRAKIN_DATA_DIR;
 const staticDir = process.env.TERRAKIN_STATIC_DIR;
+const trustedProxies = Number(process.env.TERRAKIN_TRUSTED_PROXIES ?? 0);
 
 const store = dataDir ? new JsonlStore(resolve(dataDir)) : new MemoryStore();
 const service = new WorldService({ store });
-const server = createApp({ service, ...(staticDir ? { staticDir: resolve(staticDir) } : {}) });
+const server = createApp({
+  service,
+  trustedProxies,
+  ...(staticDir ? { staticDir: resolve(staticDir) } : {}),
+});
 
 server.listen(port, () => {
   console.log(`terrakin server on http://localhost:${port}`);
