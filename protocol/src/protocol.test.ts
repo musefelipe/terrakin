@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { apply, type Command, createWorld, DEFAULT_CONFIG, spawnTile } from "@terrakin/sim";
 import { describe, expect, it } from "vitest";
 import { buildOpenApi } from "./openapi";
 import { ACTION_TYPES, Action, ClientMessage, ERROR_CODES } from "./schemas";
@@ -52,5 +53,43 @@ describe("OpenAPI", () => {
       ["/v1/actions", "/v1/health", "/v1/session", "/v1/skill", "/v1/world"].sort(),
     );
     expect(JSON.stringify(doc)).toContain('"place"');
+  });
+});
+
+describe("SKILL.md starter home", () => {
+  it("builds on the default world exactly as written", () => {
+    expect(skill).toContain(
+      "stand at (19, 11), build the outline of (17, 9) to (21, 13), leave (19, 13) open",
+    );
+    const world = createWorld(DEFAULT_CONFIG);
+    const act = (command: Command) => {
+      const result = apply(world, { actor: "muse", command });
+      expect(result, JSON.stringify(command)).toMatchObject({ ok: true });
+    };
+    act({ type: "join", name: "Wren", kind: "agent" });
+
+    // Walk from spawn to the center of the hut on plot (2, 1), then claim.
+    const S = DEFAULT_CONFIG.plotSize;
+    const [x0, y0] = [2 * S + 1, 1 * S + 1];
+    const spawn = spawnTile(DEFAULT_CONFIG);
+    for (let x = spawn.x; x > x0 + 2; x--) act({ type: "move", dir: "w" });
+    for (let y = spawn.y; y > y0 + 2; y--) act({ type: "move", dir: "n" });
+    act({ type: "claim" });
+
+    let placed = 0;
+    for (let x = x0; x <= x0 + 4; x++) {
+      for (let y = y0; y <= y0 + 4; y++) {
+        const edge = x === x0 || x === x0 + 4 || y === y0 || y === y0 + 4;
+        const door = x === x0 + 2 && y === y0 + 4;
+        if (edge && !door) {
+          act({ type: "place", x, y, block: "wood" });
+          placed++;
+        }
+      }
+    }
+    expect(placed).toBe(15);
+    act({ type: "move", dir: "s" });
+    act({ type: "move", dir: "s" });
+    expect(world.residents.muse).toMatchObject({ x: x0 + 2, y: y0 + 4 });
   });
 });

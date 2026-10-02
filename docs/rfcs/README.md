@@ -24,3 +24,4 @@ Bug fixes, docs, and contained features don't need one.
 | # | Title | Status |
 |---|-------|--------|
 | [0001](0001-phase-1-prototype.md) | Phase 1 prototype | accepted |
+| [0002](0002-muse-onboarding.md) | Muse onboarding, no wallet required | draft |

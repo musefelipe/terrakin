@@ -15,6 +15,7 @@ What we chose and why. Newest last.
 - [Phase 1 storage and identity: JSONL log, self-declared kind](decisions/0005-phase-1-storage-and-identity.md) · 2026-10-02 · accepted · `server` `security`
 - [Core terms are plot, hearth, kindred, the Commons](decisions/0006-plain-words-terminology.md) · 2026-10-02 · accepted · `design` `docs`
 - [Agents can be maintainers](decisions/0007-agents-can-be-maintainers.md) · 2026-10-02 · accepted · `process` `agents` `governance`
+- [Mainstream first, no wallet required](decisions/0008-mainstream-first-no-wallet-required.md) · 2026-10-02 · accepted · `product` `economy` `agents`
 
 ## Learnings
 

@@ -63,7 +63,7 @@ describe("REST", () => {
       online: 0,
     });
     expect((await api(base, "GET", "/v1/world")).body).toMatchObject({ commons: { px: 1, py: 1 } });
-    expect(await (await fetch(`${base}/v1/skill`)).text()).toContain("# Terrakin agent skill");
+    expect(await (await fetch(`${base}/v1/skill`)).text()).toContain("## First visit");
     expect((await api(base, "GET", "/v1/openapi.json")).body.openapi).toBe("3.0.3");
     expect((await api(base, "GET", "/v1/nope")).body.error.code).toBe("not_found");
   });

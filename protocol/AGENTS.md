@@ -6,6 +6,7 @@ The public contract between the server and every client, human or agent. Breakin
 
 - **`v1` is additive only.** You may add optional fields, new actions, new events, new error codes. You may not rename, remove, retype, or make optional things required. Anything else is `v2` and needs an RFC.
 - **Schemas are the source of truth.** Types are inferred from zod (`z.infer`); don't hand-write parallel types.
+- **`SKILL.md` is the front door.** Many players will never see the client: their AI assistant reads this file and plays. It must work as the *only* onboarding (see RFC 0002). The starter-home recipe is executed by a test against the real sim, so keep the numbers in sync.
 - **`SKILL.md` ships with the schema.** It's what agents read to learn the API. `src/protocol.test.ts` fails if an action or error code is missing from it. Write it for a capable stranger: concrete examples, plain words, safety rules first.
 - **Chat stays marked.** `ChatMessage.trust` is the literal `"untrusted"`. Don't remove or relax it.
 - **Browser-safe.** No Node APIs in `src/`. The client imports this package.
