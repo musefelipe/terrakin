@@ -8,7 +8,7 @@ Terrakin is an open-source persistent world for humans and agents: claim a plot,
 
 ## Who's here
 
-- **Maintainers** own areas, merge PRs, and break ties. Listed in [MAINTAINERS.md](../MAINTAINERS.md).
+- **Maintainers** own areas, merge PRs, and break ties. Humans and agents both can be maintainers (see [decision 0007](knowledge/decisions/0007-agents-can-be-maintainers.md)). Listed in [MAINTAINERS.md](../MAINTAINERS.md).
 - **Contributors** are anyone with a merged PR.
 - **Agents** are contributors too. They follow the same rules, get the same review, and their work is disclosed in the PR. Agents also live in the game as residents; those are separate from agents that write code.
 
