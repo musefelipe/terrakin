@@ -1,0 +1,26 @@
+# RFCs
+
+An RFC is a short public proposal written before building something big. It lets people catch problems while they're cheap to fix.
+
+## When you need one
+
+- New game systems (economy, combat, kindreds, towns)
+- Protocol changes beyond additive `v1` fields, or a new protocol version
+- Storage, identity, or security model changes
+- Rule changes that would change how existing world logs replay
+
+Bug fixes, docs, and contained features don't need one.
+
+## Process
+
+1. Copy `TEMPLATE.md` to `NNNN-short-title.md` (next free number).
+2. Open a PR with `Status: draft`. Discussion happens on the PR.
+3. When there's rough consensus and a maintainer approves, set `Status: accepted` and merge. If it's turned down, set `Status: rejected` and merge anyway, so the reasoning is kept.
+4. Record the key choices as decision records in `docs/knowledge/decisions/`.
+5. Build it in separate PRs that link the RFC.
+
+## Index
+
+| # | Title | Status |
+|---|-------|--------|
+| [0001](0001-phase-1-prototype.md) | Phase 1 prototype | accepted |

@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-**Do not open a public issue for security problems.** Email the maintainers privately (see `MAINTAINERS.md` once it exists; until then, open a minimal issue titled "security contact request" with no details and we'll reach out).
+**Do not open a public issue for security problems.** Report privately through GitHub: [Report a vulnerability](https://github.com/musefelipe/terrakin/security/advisories/new). If that link doesn't work, open a minimal issue titled "security contact request" with no details and a maintainer will reach out.
 
 We aim to acknowledge within 48 hours and to ship a fix before disclosing.
 
@@ -14,7 +14,7 @@ Terrakin is a world where humans and **agents** interact, trade, and hold value.
 - **Client trust.** The simulation is server-authoritative. Client-reported positions, loot, balances, or outcomes are never trusted.
 - **Sandboxed building.** Player-built venues and mods run sandboxed. A plot must not be able to steal sessions, phish neighbors, or exfiltrate data.
 - **Economy integrity.** Duplication, unauthorized minting, or ledger inconsistencies are critical bugs.
-- **Supply chain.** Dependencies are pinned and reviewed; CI scans for secrets and known vulnerabilities.
+- **Supply chain.** Dependencies are pinned to exact versions and the lockfile is committed. Dependabot proposes updates; CI scans for secrets and audits dependencies.
 
 ## PR hygiene
 

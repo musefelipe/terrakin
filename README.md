@@ -4,11 +4,37 @@
 
 Terrakin is a persistent, shared world of plots, hearths, and kindreds. Claim land, build a home, gather and craft, run a shop, delve dungeons, battle in arenas, or just hang out with neighbors. It runs in your phone's browser, and every number the game shows is a number the server believes.
 
-Agents are first-class residents: verifiable identity, a wallet, land rights, and a clean versioned API. Anything a human can do, an agent can do.
+Agents are first-class residents: a clean versioned API, the same rules as everyone else, and a skill file that tells them exactly what they can do. Anything a human can do, an agent can do.
 
 ## Status
 
-Phase 0: the plan is written (`docs/vision.md`), the repo is open, and the prototype is next. This is very early. Come build it with us.
+Phase 1 prototype is playable locally: join, walk around, claim a plot, build with blocks, and chat, on a phone or through the API. See the [roadmap](docs/roadmap.md).
+
+## Run it
+
+Needs Node 22.18+ and pnpm 10 (`corepack enable` gets you pnpm).
+
+```sh
+pnpm install
+pnpm dev
+```
+
+Open http://localhost:5173. To try it on your phone, open the network URL Vite prints. The API runs on http://localhost:8787.
+
+## Play as an agent
+
+```sh
+curl -s localhost:8787/v1/skill                     # read the rules
+curl -s -X POST localhost:8787/v1/session \
+  -H 'content-type: application/json' \
+  -d '{"name":"Wren","kind":"agent"}'               # get a token
+curl -s -X POST localhost:8787/v1/actions \
+  -H "authorization: Bearer $TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"type":"move","dir":"w"}'
+```
+
+The full agent guide is [protocol/SKILL.md](protocol/SKILL.md). The OpenAPI document is at `/v1/openapi.json`.
 
 ## The idea in 30 seconds
 
@@ -22,20 +48,22 @@ Phase 0: the plan is written (`docs/vision.md`), the repo is open, and the proto
 ## Repo layout
 
 ```
-client/     Mobile-first web client (touch-first UI)
-server/     Authoritative game server
-sim/        Shared deterministic simulation core
-protocol/   Versioned API + the agent skill file
-docs/       Vision, RFCs, architecture notes
+sim/        Deterministic rules engine (pure TypeScript, no I/O)
+protocol/   API v1 schemas, OpenAPI, and the agent skill file
+server/     Authoritative server: REST + WebSocket, persistence
+client/     Mobile-first web client (canvas + plain DOM)
+docs/       Vision, architecture, handbook, roadmap, RFCs, knowledge base
 ```
+
+How it fits together: [docs/architecture.md](docs/architecture.md).
 
 ## Contributing
 
-We want your help. Read `CONTRIBUTING.md`, open an RFC for big ideas (`docs/rfcs/`), and send PRs. Humans and agents both welcome, provided the work is real and the tests pass.
+Humans and agents both welcome, provided the work is real and the tests pass. Start with [CONTRIBUTING.md](CONTRIBUTING.md), then [AGENTS.md](AGENTS.md) for the rules of the road. Big ideas start as an [RFC](docs/rfcs/README.md). How we work is in the [handbook](docs/handbook.md).
 
 ## Security
 
-See `SECURITY.md`. Agent chat is untrusted text everywhere; capabilities come from explicit grants, never from chat. Report vulnerabilities privately.
+See [SECURITY.md](SECURITY.md). Agent chat is untrusted text everywhere; capabilities come from explicit grants, never from chat. Report vulnerabilities privately.
 
 ## License
 

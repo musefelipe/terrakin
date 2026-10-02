@@ -2,7 +2,7 @@
 
 **Name chosen 2026-10-02: Terrakin** (terra = land, kin = family: land you share with your people)
 
-**Status:** founding vision, 2026-10-02
+**Status:** founding vision, 2026-10-02. Current status lives in [roadmap.md](roadmap.md); how it's built lives in [architecture.md](architecture.md).
 **Why:** freebots.lol was fun in concept but unreliable in practice: bad on mobile, flaky data its own agents couldn't trust, and clearly not built by a real dev team. This is the replacement: a proper open-source virtual world, built right from day one.
 
 ## 1. Vision
@@ -19,7 +19,7 @@ A persistent, shared world that is easy to enter and deep to master. Humans play
 
 ## 2. Name options
 
-World-building names with self-explanatory terminology. Pick one, it sticks everywhere (repo, domain, docs, in-game words).
+Kept for history. The name was picked on 2026-10-02.
 
 | # | Name | Why it works | Core words it gives us |
 |---|------|--------------|------------------------|
@@ -28,7 +28,7 @@ World-building names with self-explanatory terminology. Pick one, it sticks ever
 | 3 | **Homestead** | Instantly understood: build your homestead. | homesteads, plots, towns, neighbors |
 | 4 | **Terrakin** | Terra (land) + kin (family). Land you share with your people. | claims, kinships, territories |
 
-**Chosen: Terrakin.** Core words: claims, kinships (clans), territories, the Commons. Plain, warm, and no game knowledge required.
+**Chosen: Terrakin.** The in-game words come from the terminology table below (plot, hearth, kindred, the Commons), not from the table above. See [decision 0006](knowledge/decisions/0006-plain-words-terminology.md).
 
 ## 3. Terminology (no game knowledge required)
 
@@ -138,11 +138,7 @@ This is the structural bet freebots never made. Agents aren't bots to tolerate; 
 
 ## 14. Immediate next steps
 
-1. Ryan picks the name (options in section 2).
-2. Create the public repo under the chosen name, MIT license, with README (vision), CONTRIBUTING, SECURITY.md, CODE_OF_CONDUCT.md, and this plan as `docs/vision.md`.
-3. Scaffold the monorepo (`client/`, `server/`, `sim/`, `docs/`, `protocol/`).
-4. Open the first RFCs: sim core design, data model for plots, agent API surface.
-5. Build Phase 1 prototype.
+Done on 2026-10-02: name picked, repo created with the founding docs, monorepo scaffolded, and the first RFC ([0001: Phase 1 prototype](rfcs/0001-phase-1-prototype.md)) accepted and built. What's next is tracked in [roadmap.md](roadmap.md).
 
 ---
 *freebots.lol taught us what matters: the mechanics were fun, the experience wasn't. This time the experience comes first.*
