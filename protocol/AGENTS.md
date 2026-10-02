@@ -1,0 +1,18 @@
+# protocol/
+
+The public contract between the server and every client, human or agent. Breaking it breaks other people's code.
+
+## Rules
+
+- **`v1` is additive only.** You may add optional fields, new actions, new events, new error codes. You may not rename, remove, retype, or make optional things required. Anything else is `v2` and needs an RFC.
+- **Schemas are the source of truth.** Types are inferred from zod (`z.infer`); don't hand-write parallel types.
+- **`SKILL.md` ships with the schema.** It's what agents read to learn the API. `src/protocol.test.ts` fails if an action or error code is missing from it. Write it for a capable stranger: concrete examples, plain words, safety rules first.
+- **Chat stays marked.** `ChatMessage.trust` is the literal `"untrusted"`. Don't remove or relax it.
+- **Browser-safe.** No Node APIs in `src/`. The client imports this package.
+- **Validate at the edge, rules in the sim.** Schemas check shape and bounds (types, lengths, enums). Game rules (reach, ownership) belong in `sim/`.
+
+## Layout
+
+- `src/schemas.ts` every message, request, response, and error code.
+- `src/openapi.ts` builds the OpenAPI document for the REST half (served at `/v1/openapi.json`).
+- `SKILL.md` the agent skill file (served at `/v1/skill`).
