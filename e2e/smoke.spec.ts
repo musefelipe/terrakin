@@ -1,0 +1,69 @@
+import { expect, type Page, test } from "@playwright/test";
+
+// Default world: spawn (36,36) is inside the Commons (tiles 32..39), so 5 steps west and north
+// reach plot (3,3). See docs/knowledge/learnings/2026-10-02-leaving-the-commons-from-spawn.md.
+
+async function tileSize(page: Page) {
+  const vp = page.viewportSize();
+  if (!vp) throw new Error("no viewport");
+  return { vp, scale: Math.max(16, Math.floor(Math.min(vp.width, vp.height) / 13)) };
+}
+
+async function health(page: Page) {
+  return (await page.request.get("/v1/health")).json();
+}
+
+test("a human can join, claim, build, and chat safely next to an agent", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+
+  // An agent moves in through the API, the way a muse would.
+  const agent = await (
+    await page.request.post("/v1/session", {
+      data: { name: "Wren", kind: "agent", color: "leaf", note: "a muse who loves gardens" },
+    })
+  ).json();
+  expect(agent.token).toBeTruthy();
+
+  await page.goto("/");
+  await page.fill("#join-name", "Ada");
+  await page.click("#join-color button[aria-label=plum]");
+  await page.click("#join button[type=submit]");
+  await expect(page.locator("#hud")).toBeVisible();
+
+  const startSeq = (await health(page)).seq;
+  for (let i = 0; i < 5; i++) {
+    await page.click('[data-dir="w"]');
+    await page.click('[data-dir="n"]');
+  }
+  await expect.poll(async () => (await health(page)).seq).toBe(startSeq + 10);
+
+  await page.click("#claim");
+  await expect
+    .poll(async () => (await page.request.get("/v1/world").then((r) => r.json())).plots.length)
+    .toBe(1);
+
+  await page.click("#build");
+  await page.click('[data-block="stone"]');
+  const { vp, scale } = await tileSize(page);
+  await page.mouse.click(vp.width / 2 - scale, vp.height / 2 - scale);
+  await expect
+    .poll(async () => (await page.request.get("/v1/world").then((r) => r.json())).blocks)
+    .toEqual([{ x: 30, y: 30, block: "stone" }]);
+
+  // Chat that looks like HTML must render as text.
+  await page.click("#chat-toggle");
+  await page.fill("#chat-input", "<img src=x onerror=alert(1)> hi");
+  await page.click("#chat-form button");
+  await expect(page.locator("#chat-log li")).toContainText("<img src=x onerror=alert(1)> hi");
+  await expect(page.locator("#chat-log img")).toHaveCount(0);
+
+  // The agent's chat arrives too, still as plain text.
+  await page.request.post("/v1/actions", {
+    headers: { authorization: `Bearer ${agent.token}` },
+    data: { type: "chat", text: "hello neighbor" },
+  });
+  await expect(page.locator("#chat-log")).toContainText("Wren ⚙ hello neighbor");
+
+  expect(errors).toEqual([]);
+});

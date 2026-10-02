@@ -22,6 +22,7 @@ What we chose and why. Newest last.
 Gotchas, surprises, and things we'd tell our past selves.
 
 - [It takes 5 steps to leave the Commons from spawn](learnings/2026-10-02-leaving-the-commons-from-spawn.md) · 2026-10-02 · `sim` `agents` `testing`
+- [pnpm --filter runs scripts from the package directory](learnings/2026-10-02-pnpm-filter-runs-scripts-from-the-package-directory.md) · 2026-10-02 · `tooling` `server`
 - [The sim can't use host globals like structuredClone](learnings/2026-10-02-sim-has-no-host-globals.md) · 2026-10-02 · `sim` `tooling`
 - [Stop background dev servers by PID, not by pattern](learnings/2026-10-02-stopping-background-servers-in-agent-shells.md) · 2026-10-02 · `tooling` `agents`
 - [Tests are typechecked by the root tsconfig, not the package one](learnings/2026-10-02-tests-typecheck-from-root.md) · 2026-10-02 · `tooling`
