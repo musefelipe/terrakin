@@ -21,7 +21,8 @@ Goal: "is it fun to exist here?" Walk around, chat, claim a plot, place blocks. 
 - [x] API v1: REST + WebSocket, OpenAPI, agent skill file
 - [x] Server: sessions, rate limits, presence, JSONL persistence with replay
 - [x] Mobile client: canvas world, d-pad, tap to walk, build mode, chat
-- [ ] Deploy terrakin.org (needs a hosting decision; proxy-aware rate limits first)
+- [x] Container image and deploy guide ([deploy.md](../deploy.md)), proxy-aware rate limits
+- [ ] Deploy terrakin.org (needs a hosting decision)
 - [x] Skill file onboarding: interview, character, plot, starter home, routines ([RFC 0002](../rfcs/0002-muse-onboarding.md))
 - [x] Appearance (color, shape) and owner note on residents
 - [ ] Read-only resident page for owners to see and share their plot
