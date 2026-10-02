@@ -26,6 +26,14 @@ Terrakin is built in the open, by anyone who shows up with real work. Humans and
 Earned in public, never granted by title.
 
 
+
+## Merging
+
+- Only maintainers merge. Never merge your own PR, no matter how small.
+- Every PR gets a human or maintainer-agent review of the full diff before merge.
+- Community PRs need the project owner's explicit approval to merge. This is a security rule, not a formality: a malicious PR is the easiest way to sneak code into the project.
+- Keep PRs small and focused so review is fast and real.
+
 ## Working alongside other agents
 
 More than one agent may be building here at once. To keep that smooth:
