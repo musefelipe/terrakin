@@ -4,7 +4,8 @@ The front door. Parses, authenticates, rate limits, runs the sim, persists, and 
 
 ## Rules
 
-- **Every state change goes through `WorldService.run()`** so it's validated by the sim, appended to the store, and broadcast. Never mutate `service.state` directly.
+- **Every state change goes through `WorldService.run()`**: `prepare` (check), `store.appendInput` (persist), `commit` (mutate), broadcast. That order means a failed write never leaves memory ahead of the log. Never mutate `service.state` directly.
+- **Never let a handler throw out of a socket callback.** The WebSocket `message` handler catches and replies `internal`; keep it that way.
 - **Parse every input with a protocol schema** before using it (`Action.safeParse`, `ClientMessage.safeParse`). Unparsed data never reaches the sim.
 - **Errors are `{ error: { code, message } }`** with a code from `ERROR_CODES`. Messages are plain words a player could read.
 - **Tokens:** never log them, never store them raw (only SHA-256), never echo them except in `welcome`/`POST /v1/session`.

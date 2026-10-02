@@ -13,8 +13,8 @@ The vision promises that every number the game shows is a number the server beli
 
 ## Decision
 
-- `sim/` is pure: `apply(state, input)` validates every rule before mutating anything, then mutates and returns events. No clocks, no randomness, no I/O. (When we need randomness, it'll be a seeded RNG carried in state.)
-- The server stores only the log of accepted inputs (`Input = { actor, command }`). On boot it replays the log through the sim (`server/src/store.ts`, `sim/src/replay.ts`).
+- `sim/` is pure: `prepare(state, input)` validates every rule without mutating; its `commit()` mutates and returns events. `apply()` does both. No clocks, no randomness, no I/O. (When we need randomness, it'll be a seeded RNG carried in state.)
+- The server stores only the log of accepted inputs (`Input = { actor, command }`), written after `prepare` and before `commit`, so the log is never behind memory. On boot it replays the log through the sim (`server/src/store.ts`, `sim/src/replay.ts`). A truncated last line (crash mid-write) is skipped; it was never acknowledged.
 - `hashWorld()` fingerprints the whole state. `/v1/health` exposes `seq` and `hash` so any client can check it's in sync.
 
 ## Consequences

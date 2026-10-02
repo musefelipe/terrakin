@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,7 +7,8 @@ import type { WorldConfig } from "@terrakin/sim";
 import { afterEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { createApp } from "./app";
-import { JsonlStore, MemoryStore, type Store } from "./store";
+import { RateLimiters } from "./rate-limit";
+import { JsonlStore, MemoryStore, readJsonl, type Store } from "./store";
 import { cleanText } from "./text";
 import { WorldService } from "./world-service";
 
@@ -124,6 +125,60 @@ describe("REST", () => {
   });
 });
 
+describe("hardening", () => {
+  it("leaves the world untouched when the store can't write", async () => {
+    const store = new MemoryStore();
+    const { base, service } = await start(store);
+    const { token } = await join_(base, "Wren");
+    const before = { seq: service.state.seq, hash: service.hash() };
+    store.appendInput = () => {
+      throw new Error("disk full");
+    };
+    const res = await api(base, "POST", "/v1/actions", { type: "move", dir: "n" }, token);
+    expect(res.body).toMatchObject({ ok: false, error: { code: "internal" } });
+    expect({ seq: service.state.seq, hash: service.hash() }).toEqual(before);
+    expect(store.log).toHaveLength(before.seq);
+  });
+
+  it("limits new sessions per IP much harder than actions", async () => {
+    const service = new WorldService({ store: new MemoryStore(), config: CONFIG });
+    const server = createApp({ service, sessionsPerMinute: 1 });
+    await new Promise<void>((done) => server.listen(0, done));
+    cleanups.push(() => new Promise<void>((done) => server.close(() => done())));
+    const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    const statuses = [];
+    for (let i = 0; i < 7; i++) {
+      statuses.push(
+        (await api(base, "POST", "/v1/session", { name: `n${i}`, kind: "agent" })).status,
+      );
+    }
+    expect(statuses.slice(0, 5)).toEqual([201, 201, 201, 201, 201]);
+    expect(statuses.slice(5)).toEqual([429, 429]);
+  });
+
+  it("forgets rate-limit buckets once they refill", () => {
+    let now = 0;
+    const limits = new RateLimiters(2, 1, () => now);
+    limits.take("a");
+    limits.take("b");
+    limits.prune();
+    expect(limits.size).toBe(2);
+    now = 5_000;
+    limits.prune();
+    expect(limits.size).toBe(0);
+  });
+
+  it("skips a truncated last line but rejects corruption elsewhere", () => {
+    const dir = mkdtempSync(join(tmpdir(), "terrakin-"));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    const path = join(dir, "x.jsonl");
+    appendFileSync(path, '{"a":1}\n{"a":2}\n{"a":');
+    expect(readJsonl(path)).toEqual([{ a: 1 }, { a: 2 }]);
+    appendFileSync(path, '\n{"a":3}\n');
+    expect(() => readJsonl(path)).toThrow(/Corrupt line 3/);
+  });
+});
+
 describe("WebSocket", () => {
   function connect(base: string) {
     const ws = new WebSocket(`${base.replace("http", "ws")}/v1/live`);
@@ -193,6 +248,32 @@ describe("WebSocket", () => {
     c.ws.close();
     await new Promise((r) => setTimeout(r, 50));
     expect(service.state.residents[residentId]?.online).toBe(false);
+  });
+
+  it("brings a socket resident back after they were marked offline", async () => {
+    const { base } = await start();
+    const { token } = await join_(base, "Wren");
+    const c = connect(base);
+    await c.open;
+    c.send({ type: "hello", v: 1, token });
+    await c.next("welcome");
+    await api(base, "DELETE", "/v1/session", undefined, token);
+    c.send({ type: "action", id: "m1", action: { type: "move", dir: "n" } });
+    expect(await c.next("ack")).toMatchObject({ id: "m1" });
+  });
+
+  it("answers a server-side failure with an error instead of crashing", async () => {
+    const store = new MemoryStore();
+    const { base } = await start(store);
+    const c = connect(base);
+    await c.open;
+    c.send({ type: "hello", v: 1, name: "Ada", kind: "human" });
+    await c.next("welcome");
+    store.appendInput = () => {
+      throw new Error("disk full");
+    };
+    c.send({ type: "action", id: "m1", action: { type: "move", dir: "n" } });
+    expect(await c.next("error")).toMatchObject({ id: "m1", error: { code: "internal" } });
   });
 
   it("requires hello before actions", async () => {

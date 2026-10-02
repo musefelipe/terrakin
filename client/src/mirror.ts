@@ -32,11 +32,14 @@ export class Mirror {
   }
 
   /**
-   * Apply one server event. Returns false if the event is out of order, which means the caller
-   * should reload the snapshot. Several events can share one seq (one action, many effects).
+   * Apply one server event. Several events can share one seq (one action, many effects).
+   * - "applied": done.
+   * - "stale": already included in our snapshot; ignored.
+   * - "gap": we missed something. The caller should reload the snapshot.
    */
-  apply({ seq, event }: EventMessage): boolean {
-    if (seq !== this.seq && seq !== this.seq + 1) return false;
+  apply({ seq, event }: EventMessage): "applied" | "stale" | "gap" {
+    if (seq < this.seq) return "stale";
+    if (seq > this.seq + 1) return "gap";
     this.seq = seq;
     switch (event.type) {
       case "joined":
@@ -62,7 +65,7 @@ export class Mirror {
         this.blocks.delete(tileKey(event.x, event.y));
         break;
     }
-    return true;
+    return "applied";
   }
 
   ownerAt(x: number, y: number): string | undefined {

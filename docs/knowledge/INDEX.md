@@ -29,4 +29,4 @@ Gotchas, surprises, and things we'd tell our past selves.
 
 End-of-session notes. Read the latest one before starting work.
 
-- [Foundation and Phase 1 prototype](handoffs/2026-10-02-foundation-and-phase-1-prototype.md) · 2026-10-02 · `process` `sim` `protocol` `server` `client`
+- [Foundation and Phase 1 prototype](handoffs/2026-10-02-2200-foundation-and-phase-1-prototype.md) · 2026-10-02 · `process` `sim` `protocol` `server` `client`

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apply } from "./apply";
+import { apply, prepare } from "./apply";
 import { hashWorld } from "./hash";
 import { replay } from "./replay";
 import type { Command, Input, WorldConfig, WorldState } from "./types";
@@ -213,5 +213,22 @@ describe("determinism", () => {
     expect(log).toHaveLength(script.length - 1);
     expect(state.seq).toBe(log.length);
     expect(hashWorld(replay(CONFIG, log))).toBe(hashWorld(state));
+  });
+});
+
+describe("prepare", () => {
+  it("checks without mutating, then commits exactly once", () => {
+    const state = joined("ada");
+    const before = hashWorld(state);
+    const prepared = prepare(state, { actor: "ada", command: { type: "move", dir: "n" } });
+    expect(prepared.ok).toBe(true);
+    expect(hashWorld(state)).toBe(before);
+    if (!prepared.ok) return;
+    expect(prepared.commit()).toEqual({
+      seq: 2,
+      events: [{ type: "moved", residentId: "ada", x: 6, y: 5 }],
+    });
+    expect(() => prepared.commit()).toThrow();
+    expect(state.seq).toBe(2);
   });
 });

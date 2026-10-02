@@ -4,6 +4,7 @@ import type {
   Command,
   Direction,
   Input,
+  Rejection,
   RejectionCode,
   WorldEvent,
   WorldState,
@@ -23,31 +24,58 @@ export const NAME_MAX_LENGTH = 24;
 
 const STEP: Record<Direction, [number, number]> = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
 
-function reject(code: RejectionCode, message: string): ApplyResult {
-  return { ok: false, rejection: { code, message } };
-}
+/**
+ * A validated input, ready to commit. `commit()` mutates the state it was prepared against,
+ * bumps `seq`, and returns the events. Call it at most once, and only if the state hasn't changed
+ * since `prepare()`.
+ */
+export type Prepared =
+  | { ok: true; commit: () => { seq: number; events: WorldEvent[] } }
+  | { ok: false; rejection: Rejection };
+
+const reject = (code: RejectionCode, message: string): Prepared => ({
+  ok: false,
+  rejection: { code, message },
+});
 
 /**
- * Apply one input to the world.
+ * Check an input against the rules without changing anything.
+ *
+ * Splitting check from commit lets the server persist an input before the world changes: if the
+ * write fails, the world is untouched and memory never gets ahead of the log.
  *
  * Contract:
  * - Deterministic: same state + same input always gives the same result. No clocks, no Math.random, no I/O.
- * - All-or-nothing: every check runs before any mutation. A rejected input leaves `state` untouched.
- * - On success, `state` is mutated in place, `state.seq` increases by exactly one, and the returned
- *   events describe every change so clients can mirror the world without re-running the rules.
+ * - `prepare` never mutates. All checks happen here.
+ * - `commit` mutates in place, increases `state.seq` by exactly one, and returns events that describe
+ *   every change, so clients can mirror the world without re-running the rules.
  */
-export function apply(state: WorldState, input: Input): ApplyResult {
-  const events = validateAndCommit(state, input.actor, input.command);
-  if (!Array.isArray(events)) return events;
-  state.seq += 1;
-  return { ok: true, seq: state.seq, events };
+export function prepare(state: WorldState, input: Input): Prepared {
+  const mutate = check(state, input.actor, input.command);
+  if (typeof mutate !== "function") return mutate;
+  let done = false;
+  return {
+    ok: true,
+    commit: () => {
+      if (done) throw new Error("Prepared input committed twice");
+      done = true;
+      const events = mutate();
+      state.seq += 1;
+      return { seq: state.seq, events };
+    },
+  };
 }
 
-function validateAndCommit(
-  state: WorldState,
-  actor: string,
-  command: Command,
-): WorldEvent[] | ApplyResult {
+/** Prepare and commit in one step. Rejected inputs leave `state` untouched. */
+export function apply(state: WorldState, input: Input): ApplyResult {
+  const prepared = prepare(state, input);
+  if (!prepared.ok) return prepared;
+  return { ok: true, ...prepared.commit() };
+}
+
+type Mutation = () => WorldEvent[];
+
+function check(state: WorldState, actor: string, command: Command): Mutation | Prepared {
   const { config } = state;
   const me = state.residents[actor];
 
@@ -68,17 +96,20 @@ function validateAndCommit(
       y: keepSpot ? me.y : spawn.y,
       online: true,
     };
-    state.residents[actor] = resident;
-    return [{ type: "joined", resident: { ...resident } }];
+    return () => {
+      state.residents[actor] = resident;
+      return [{ type: "joined", resident: { ...resident } }];
+    };
   }
 
   if (!me?.online) return reject("not_joined", "Join the world first.");
 
   switch (command.type) {
-    case "leave": {
-      me.online = false;
-      return [{ type: "left", residentId: actor }];
-    }
+    case "leave":
+      return () => {
+        me.online = false;
+        return [{ type: "left", residentId: actor }];
+      };
 
     case "move": {
       const [dx, dy] = STEP[command.dir];
@@ -86,9 +117,11 @@ function validateAndCommit(
       const y = me.y + dy;
       if (!inBounds(config, x, y)) return reject("out_of_bounds", "That's the edge of the world.");
       if (isSolid(state, x, y)) return reject("blocked", "A block is in the way.");
-      me.x = x;
-      me.y = y;
-      return [{ type: "moved", residentId: actor, x, y }];
+      return () => {
+        me.x = x;
+        me.y = y;
+        return [{ type: "moved", residentId: actor, x, y }];
+      };
     }
 
     case "claim": {
@@ -101,8 +134,10 @@ function validateAndCommit(
       if (plotsOwnedBy(state, actor).length >= config.maxPlotsPerResident) {
         return reject("plot_limit", `You can own at most ${config.maxPlotsPerResident} plot(s).`);
       }
-      state.plots[plotKey(px, py)] = { px, py, ownerId: actor };
-      return [{ type: "plot_claimed", px, py, ownerId: actor }];
+      return () => {
+        state.plots[plotKey(px, py)] = { px, py, ownerId: actor };
+        return [{ type: "plot_claimed", px, py, ownerId: actor }];
+      };
     }
 
     case "place":
@@ -118,8 +153,10 @@ function validateAndCommit(
       const key = tileKey(x, y);
       if (command.type === "remove") {
         if (state.blocks[key] === undefined) return reject("no_block", "Nothing to remove there.");
-        delete state.blocks[key];
-        return [{ type: "block_removed", x, y, by: actor }];
+        return () => {
+          delete state.blocks[key];
+          return [{ type: "block_removed", x, y, by: actor }];
+        };
       }
       if (state.blocks[key] !== undefined)
         return reject("tile_occupied", "A block is already there.");
@@ -127,8 +164,11 @@ function validateAndCommit(
         (r) => r.online && r.x === x && r.y === y,
       );
       if (standingThere) return reject("tile_occupied", "Someone is standing there.");
-      state.blocks[key] = command.block;
-      return [{ type: "block_placed", x, y, block: command.block, by: actor }];
+      const { block } = command;
+      return () => {
+        state.blocks[key] = block;
+        return [{ type: "block_placed", x, y, block, by: actor }];
+      };
     }
   }
 }

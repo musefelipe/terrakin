@@ -2,13 +2,13 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Action, ErrorCode, ServerMessage, WorldSnapshot } from "@terrakin/protocol";
 import { PROTOCOL_VERSION } from "@terrakin/protocol";
 import {
-  apply,
   type Command,
   commonsPlot,
   DEFAULT_CONFIG,
   hashWorld,
   type Input,
   parseKey,
+  prepare,
   type ResidentKind,
   replay,
   type WorldConfig,
@@ -125,12 +125,22 @@ export class WorldService {
     return { ok: true, seq: this.state.seq, events: [] };
   }
 
+  /**
+   * The only path that changes the world. Order matters: check, persist, then commit. If the
+   * write fails, the world is untouched, so memory never gets ahead of the log.
+   */
   private run(input: Input): ActResult {
-    const result = apply(this.state, input);
-    if (!result.ok) return { ok: false, error: result.rejection };
-    this.store.appendInput(input);
-    for (const event of result.events) this.broadcast({ type: "event", seq: result.seq, event });
-    return result;
+    const prepared = prepare(this.state, input);
+    if (!prepared.ok) return { ok: false, error: prepared.rejection };
+    try {
+      this.store.appendInput(input);
+    } catch (err) {
+      console.error("Failed to persist input; world unchanged", err);
+      return { ok: false, error: { code: "internal", message: "Couldn't save that. Try again." } };
+    }
+    const { seq, events } = prepared.commit();
+    for (const event of events) this.broadcast({ type: "event", seq, event });
+    return { ok: true, seq, events };
   }
 
   // ---------- presence ----------
@@ -156,6 +166,10 @@ export class WorldService {
     for (const r of Object.values(this.state.residents)) {
       if (!r.online || this.sockets.has(r.id)) continue;
       if ((this.lastSeen.get(r.id) ?? 0) < cutoff) this.leave(r.id);
+    }
+    // Forget offline residents so this map stays the size of the online population.
+    for (const id of this.lastSeen.keys()) {
+      if (!this.state.residents[id]?.online) this.lastSeen.delete(id);
     }
   }
 

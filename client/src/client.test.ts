@@ -17,22 +17,23 @@ const snapshot: WorldSnapshot = {
 describe("Mirror", () => {
   it("applies events in order", () => {
     const m = new Mirror(snapshot);
-    expect(m.apply({ seq: 4, event: { type: "moved", residentId: "a", x: 6, y: 5 } })).toBe(true);
-    expect(m.apply({ seq: 5, event: { type: "plot_claimed", px: 0, py: 0, ownerId: "a" } })).toBe(
-      true,
-    );
-    expect(
-      m.apply({ seq: 6, event: { type: "block_placed", x: 1, y: 1, block: "leaf", by: "a" } }),
-    ).toBe(true);
+    const events = [
+      { seq: 4, event: { type: "moved", residentId: "a", x: 6, y: 5 } },
+      { seq: 5, event: { type: "plot_claimed", px: 0, py: 0, ownerId: "a" } },
+      { seq: 6, event: { type: "block_placed", x: 1, y: 1, block: "leaf", by: "a" } },
+    ] as const;
+    for (const e of events) expect(m.apply(e)).toBe("applied");
     expect(m.residents.get("a")).toMatchObject({ x: 6, y: 5 });
     expect(m.ownerAt(3, 3)).toBe("a");
     expect(m.blocks.get("1,1")).toBe("leaf");
   });
 
-  it("reports a gap so the caller can resync", () => {
+  it("ignores stale events and reports gaps without applying them", () => {
     const m = new Mirror(snapshot);
-    expect(m.apply({ seq: 9, event: { type: "left", residentId: "a" } })).toBe(false);
+    expect(m.apply({ seq: 2, event: { type: "left", residentId: "a" } })).toBe("stale");
+    expect(m.apply({ seq: 9, event: { type: "left", residentId: "a" } })).toBe("gap");
     expect(m.residents.get("a")?.online).toBe(true);
+    expect(m.seq).toBe(3);
   });
 });
 

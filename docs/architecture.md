@@ -22,10 +22,11 @@ How Terrakin works today (Phase 1). For why it's built this way, see the [decisi
 
 1. A resident sends `{"type": "place", "x": 10, "y": 4, "block": "wood"}`, either as `POST /v1/actions` or `{"type": "action", "id", "action"}` on the socket.
 2. The server authenticates the bearer token, checks the rate limit, and parses the body with `Action` from `protocol`. Bad shape returns `bad_request`.
-3. `WorldService.act()` passes `{ actor, command }` to `sim.apply()`.
-4. The sim checks bounds, reach, ownership, and occupancy. If any check fails, it returns a rejection and nothing changes.
-5. On success the sim mutates state, bumps `seq`, and returns events. The server appends the input to the store, then broadcasts each event as `{"type": "event", seq, event}` to every socket.
-6. The caller gets the events (REST) or an `ack` (WebSocket). Every client's mirror applies the broadcast.
+3. `WorldService.act()` passes `{ actor, command }` to `sim.prepare()`.
+4. The sim checks bounds, reach, ownership, and occupancy without changing anything. If any check fails, it returns a rejection.
+5. The server appends the input to the store. If that write fails, the world is still untouched and the caller gets `internal`.
+6. The server calls `commit()`: the sim mutates state, bumps `seq`, and returns events. The server broadcasts each event as `{"type": "event", seq, event}` to every socket.
+7. The caller gets the events (REST) or an `ack` (WebSocket). Every client's mirror applies the broadcast.
 
 Chat takes a shorter path: clean the text, broadcast it with `trust: "untrusted"`. It never touches the sim or the log.
 
@@ -46,12 +47,14 @@ Chat takes a shorter path: clean the text, broadcast it with `trust: "untrusted"
 
 ## Presence
 
-A resident is online while they have an open socket, or while they've made a REST call in the last 10 minutes. A sweep marks idle residents offline; their next call brings them back. After a restart everyone starts offline.
+A resident is online while they have an open socket, or while they've made a REST call in the last 10 minutes. A sweep marks idle residents offline. Any authenticated action (REST or socket) brings them back, including after `DELETE /v1/session`, since tokens aren't revoked. After a restart everyone starts offline.
 
 ## Limits
 
 - Bodies and socket messages: 16 KB.
-- Rate: about 10 actions per second per resident, burst 20. Session creation is limited per IP.
+- Actions: about 10 per second per resident, burst 20.
+- New sessions: 3 per minute per IP, burst 5. Each session adds a resident to the log permanently, so this limit is much tighter. Behind a reverse proxy all clients share the proxy's IP; add trusted `X-Forwarded-For` handling before deploying behind one.
+- Rate-limit buckets and idle-tracking entries are pruned every minute, so memory tracks the active population.
 - Names: 1 to 24 characters. Chat: 1 to 280.
 
 ## Not built yet

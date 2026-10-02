@@ -12,7 +12,7 @@ import {
   type ServerMessage,
 } from "@terrakin/protocol";
 import { WebSocketServer } from "ws";
-import { RateLimiter } from "./rate-limit";
+import { RateLimiters } from "./rate-limit";
 import type { WorldService } from "./world-service";
 
 const MAX_BODY_BYTES = 16 * 1024;
@@ -44,23 +44,21 @@ export interface AppOptions {
   service: WorldService;
   /** Serve a built client from this directory (optional). */
   staticDir?: string;
-  /** Actions per second allowed per resident (burst = 2x). */
+  /** Actions per second allowed per resident (burst = 2x). Default 10. */
   actionsPerSecond?: number;
+  /** New sessions per minute allowed per IP (burst = 5). Default 3. */
+  sessionsPerMinute?: number;
 }
 
 /** HTTP + WebSocket front door. All rules live in the sim; this layer only parses, authenticates, and routes. */
 export function createApp(options: AppOptions): Server {
   const { service } = options;
   const rate = options.actionsPerSecond ?? 10;
-  const limiters = new Map<string, RateLimiter>();
-  const allow = (key: string) => {
-    let limiter = limiters.get(key);
-    if (!limiter) {
-      limiter = new RateLimiter(rate * 2, rate);
-      limiters.set(key, limiter);
-    }
-    return limiter.take();
-  };
+  const actionLimits = new RateLimiters(rate * 2, rate);
+  // Every session adds a resident to the log forever, so creating them is much more limited.
+  // Note: behind a reverse proxy every client shares the proxy's IP. Add trusted
+  // X-Forwarded-For handling before deploying behind one.
+  const sessionLimits = new RateLimiters(5, (options.sessionsPerMinute ?? 3) / 60);
 
   const server = createServer((req, res) => {
     handle(req, res).catch((err: unknown) => {
@@ -92,8 +90,9 @@ export function createApp(options: AppOptions): Server {
         return res.end(OPENAPI);
 
       case "POST /v1/session": {
-        if (!allow(`ip:${req.socket.remoteAddress}`))
-          return sendError(res, "rate_limited", "Slow down.");
+        if (!sessionLimits.take(req.socket.remoteAddress ?? "unknown")) {
+          return sendError(res, "rate_limited", "Too many new sessions. Try again in a minute.");
+        }
         const parsed = CreateSessionRequest.safeParse(await readJson(req));
         if (!parsed.success) return sendError(res, "bad_request", parsed.error.message);
         const result = service.createSession(parsed.data.name, parsed.data.kind);
@@ -117,7 +116,7 @@ export function createApp(options: AppOptions): Server {
       case "POST /v1/actions": {
         const residentId = authenticate(req);
         if (!residentId) return sendError(res, "unauthorized", "Missing or unknown bearer token.");
-        if (!allow(residentId)) return sendError(res, "rate_limited", "Slow down.");
+        if (!actionLimits.take(residentId)) return sendError(res, "rate_limited", "Slow down.");
         const parsed = Action.safeParse(await readJson(req));
         if (!parsed.success) return sendError(res, "bad_request", parsed.error.message);
         service.ensureOnline(residentId);
@@ -153,9 +152,18 @@ export function createApp(options: AppOptions): Server {
     const helloTimer = setTimeout(() => socket.close(4000, "hello timeout"), HELLO_TIMEOUT_MS);
 
     socket.on("message", (data) => {
+      try {
+        onMessage(data.toString());
+      } catch (err) {
+        console.error(err);
+        fail("internal", "Something broke on our side.");
+      }
+    });
+
+    function onMessage(text: string) {
       let raw: unknown;
       try {
-        raw = JSON.parse(data.toString());
+        raw = JSON.parse(text);
       } catch {
         return fail("bad_request", "Messages must be JSON.");
       }
@@ -169,29 +177,32 @@ export function createApp(options: AppOptions): Server {
           fail("version_mismatch", `This server speaks v${PROTOCOL_VERSION}.`);
           return socket.close(4001, "version mismatch");
         }
-        let token = msg.token;
-        if (token) {
-          residentId = service.authenticate(token);
-          if (!residentId) return fail("unauthorized", "Unknown token.");
-          const online = service.ensureOnline(residentId);
+        let id: string;
+        let token: string;
+        if (msg.token) {
+          const known = service.authenticate(msg.token);
+          if (!known) return fail("unauthorized", "Unknown token.");
+          const online = service.ensureOnline(known);
           if (!online.ok) return fail(online.error.code, online.error.message);
+          id = known;
+          token = msg.token;
         } else {
           if (!msg.name || !msg.kind)
             return fail("bad_request", "Send a token, or a name and kind.");
-          if (!allow(`ip:${ip}`)) return fail("rate_limited", "Slow down.");
-          const created = service.createSession(msg.name, msg.kind);
-          if (!created.ok || !created.residentId || !created.token) {
-            return fail(
-              created.ok ? "internal" : created.error.code,
-              created.ok ? "No session." : created.error.message,
-            );
+          if (!sessionLimits.take(ip)) {
+            return fail("rate_limited", "Too many new sessions. Try again in a minute.");
           }
-          residentId = created.residentId;
+          const created = service.createSession(msg.name, msg.kind);
+          if (!created.ok) return fail(created.error.code, created.error.message);
+          if (!created.residentId || !created.token) return fail("internal", "No session.");
+          id = created.residentId;
           token = created.token;
         }
+        // Only now is this socket bound to a resident.
+        residentId = id;
         clearTimeout(helloTimer);
-        service.socketOpened(residentId);
-        send({ type: "welcome", residentId, token, world: service.snapshot() });
+        service.socketOpened(id);
+        send({ type: "welcome", residentId: id, token, world: service.snapshot() });
         unsubscribe = service.subscribe(send);
         return;
       }
@@ -199,11 +210,14 @@ export function createApp(options: AppOptions): Server {
       if (!residentId) return fail("bad_request", "Say hello first.");
       if (msg.type === "ping")
         return send({ type: "pong", ...(msg.id === undefined ? {} : { id: msg.id }) });
-      if (!allow(residentId)) return fail("rate_limited", "Slow down.", msg.id);
+      if (!actionLimits.take(residentId)) return fail("rate_limited", "Slow down.", msg.id);
+      // The resident may have been marked offline (DELETE /v1/session from another client).
+      // An open socket means they're here, so bring them back.
+      service.ensureOnline(residentId);
       const result = service.act(residentId, msg.action);
       if (!result.ok) return fail(result.error.code, result.error.message, msg.id);
       send({ type: "ack", ...(msg.id === undefined ? {} : { id: msg.id }), seq: result.seq });
-    });
+    }
 
     socket.on("close", () => {
       clearTimeout(helloTimer);
@@ -212,7 +226,11 @@ export function createApp(options: AppOptions): Server {
     });
   });
 
-  const sweep = setInterval(() => service.sweepIdle(), 60_000);
+  const sweep = setInterval(() => {
+    service.sweepIdle();
+    actionLimits.prune();
+    sessionLimits.prune();
+  }, 60_000);
   sweep.unref();
   server.on("close", () => {
     clearInterval(sweep);

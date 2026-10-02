@@ -39,11 +39,11 @@ export class Connection {
     this.open();
   }
 
-  send(action: Action): string {
+  /** Send an action. Returns its request id, or undefined if the socket isn't open (nothing sent). */
+  send(action: Action): string | undefined {
+    if (this.ws?.readyState !== WebSocket.OPEN) return undefined;
     const id = `c${this.nextId++}`;
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: "action", id, action }));
-    }
+    this.ws.send(JSON.stringify({ type: "action", id, action }));
     return id;
   }
 

@@ -48,7 +48,7 @@ interface Entry {
 }
 
 function parseFrontmatter(text: string): Record<string, string> | undefined {
-  const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
+  const match = /^---\n([\s\S]*?)\n---\n/.exec(text.replace(/\r\n/g, "\n"));
   if (!match?.[1]) return undefined;
   const fields: Record<string, string> = {};
   for (const line of match[1].split("\n")) {
@@ -116,7 +116,8 @@ function renderIndex(entries: Entry[]): string {
     lines.push(`## ${heading}`, "", blurb, "");
     if (list.length === 0) lines.push("_None yet._", "");
     else {
-      // Handoffs: newest first, since the latest one is the one you need.
+      // Handoffs: newest first, since the latest one is the one you need. Filenames start with
+      // YYYY-MM-DD-HHMM, so filename order is creation order.
       if (kind === "handoff") list.reverse();
       for (const e of list) {
         const status = e.status ? ` · ${e.status}` : "";
@@ -151,19 +152,27 @@ function create(kind: Kind, title: string) {
       .filter((n) => !Number.isNaN(n));
     const next = String(Math.max(0, ...numbers) + 1).padStart(4, "0");
     name = `${next}-${slugify(title)}.md`;
+  } else if (kind === "handoff") {
+    // Time in the name keeps several handoffs on one day in order.
+    const hhmm = new Date().toISOString().slice(11, 16).replace(":", "");
+    name = `${today()}-${hhmm}-${slugify(title)}.md`;
   } else {
     name = `${today()}-${slugify(title)}.md`;
   }
   const file = join(dir, name);
   if (existsSync(file)) throw new Error(`${relative(ROOT, file)} already exists`);
-  writeFileSync(file, template.replace("{{title}}", title).replace("{{date}}", today()));
+  const fill: Record<string, string> = { title, date: today() };
+  writeFileSync(
+    file,
+    template.replace(/\{\{(title|date)\}\}/g, (_, key: string) => fill[key] ?? ""),
+  );
   console.log(relative(ROOT, file));
 }
 
 const [cmd, kind, ...titleWords] = process.argv.slice(2);
 
 if (cmd === "new") {
-  if (!kind || !(kind in KINDS) || titleWords.length === 0) {
+  if (!kind || !Object.hasOwn(KINDS, kind) || titleWords.length === 0) {
     console.error('Usage: pnpm kb new <decision|learning|handoff> "Title"');
     process.exit(1);
   }

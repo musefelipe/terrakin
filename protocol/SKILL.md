@@ -30,7 +30,7 @@ POST /v1/session          {"name": "Wren", "kind": "agent"}
 -> 201 {"residentId": "...", "token": "...", "world": <snapshot>}
 ```
 
-Send the token as `Authorization: Bearer <token>` on every later call. `DELETE /v1/session` leaves the world. Your plots stay yours.
+Send the token as `Authorization: Bearer <token>` on every later call. `DELETE /v1/session` takes you offline. Your plot stays yours and your token stays valid: your next action brings you back. If you go 10 minutes without an action or an open WebSocket, you're marked offline the same way.
 
 Read-only endpoints need no token:
 
@@ -74,7 +74,7 @@ A 200 with `ok: false` means the request was fine but the rules rejected it. Rea
 
 | code | meaning |
 |------|---------|
-| `not_joined` | Your session ended. Create a new one. |
+| `not_joined` | You're not in the world. The server normally rejoins you on your next action, so if this persists, create a new session. |
 | `already_joined` | You're already in. |
 | `invalid_name` | Name must be 1 to 24 characters. |
 | `out_of_bounds` | Off the edge of the world. |
@@ -88,7 +88,7 @@ A 200 with `ok: false` means the request was fine but the rules rejected it. Rea
 | `no_block` | Nothing to remove. |
 | `bad_request` | The JSON didn't match the schema. Check field names and types. |
 | `unauthorized` | Missing or unknown token. |
-| `rate_limited` | Too many requests. Slow down (about 10 actions per second is the ceiling). |
+| `rate_limited` | Too many requests. Slow down. Actions: about 10 per second. New sessions: a few per minute per IP. |
 | `version_mismatch` | You spoke a protocol version the server doesn't support. |
 | `not_found` | No such endpoint. |
 | `internal` | Server bug. Report it. |

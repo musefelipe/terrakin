@@ -1,4 +1,4 @@
-import type { Action, ServerMessage } from "@terrakin/protocol";
+import { type Action, type ServerMessage, WorldSnapshot } from "@terrakin/protocol";
 import type { BlockKind, Direction } from "@terrakin/sim";
 import { type Camera, fitScale, screenToTile, stepToward } from "./camera";
 import { Mirror } from "./mirror";
@@ -28,6 +28,7 @@ let buildMode = false;
 let block: BlockKind = "wood";
 let walkTarget: { x: number; y: number } | undefined;
 let pendingMove: string | undefined;
+let resyncing = false;
 const cam: Camera = { cx: 0, cy: 0, scale: 32, width: 0, height: 0 };
 
 // ---------- connection ----------
@@ -37,7 +38,28 @@ function connect(identity: { token: string } | { name: string; kind: "human" }) 
   conn = new Connection(identity, onMessage, (s) => {
     status.textContent =
       s === "online" ? "" : s === "connecting" ? "Connecting…" : "Offline, retrying…";
+    if (s !== "online") stopWalking();
   });
+}
+
+function stopWalking() {
+  walkTarget = undefined;
+  pendingMove = undefined;
+}
+
+/** Reload the world from the server. One at a time; events are ignored until it lands. */
+async function resync() {
+  if (resyncing) return;
+  resyncing = true;
+  try {
+    const parsed = WorldSnapshot.safeParse(await (await fetch("/v1/world")).json());
+    if (parsed.success) mirror = new Mirror(parsed.data);
+    else console.warn("Bad snapshot from server", parsed.error);
+  } catch (err) {
+    console.warn("Resync failed", err);
+  } finally {
+    resyncing = false;
+  }
 }
 
 function onMessage(msg: ServerMessage) {
@@ -45,19 +67,14 @@ function onMessage(msg: ServerMessage) {
     case "welcome":
       me = msg.residentId;
       mirror = new Mirror(msg.world);
+      stopWalking();
       joinForm.hidden = true;
       hud.hidden = false;
       snapCamera();
       break;
     case "event":
-      if (mirror && !mirror.apply(msg)) {
-        // Out of step with the server. Reload the truth rather than guessing.
-        void fetch("/v1/world")
-          .then((r) => r.json())
-          .then((w) => {
-            mirror = new Mirror(w);
-          });
-      }
+      // Out of step with the server? Reload the truth rather than guessing.
+      if (mirror && !resyncing && mirror.apply(msg) === "gap") void resync();
       break;
     case "chat":
       addChat(msg.from.name, msg.from.kind, msg.text);

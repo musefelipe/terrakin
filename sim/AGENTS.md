@@ -5,7 +5,7 @@ The rules engine. If a rule decides what's allowed in the world, it lives here a
 ## Invariants (tests enforce these; don't weaken them)
 
 - **Pure and deterministic.** No `Date`, `Math.random`, timers, network, filesystem, or host globals. The tsconfig has no DOM or Node types on purpose. If you need randomness, add a seeded RNG to `WorldState` and draw from it.
-- **All-or-nothing.** `apply()` runs every check before mutating anything. A rejected input leaves state byte-identical (`hashWorld` before == after).
+- **Check, then commit.** `prepare()` runs every check and mutates nothing; its `commit()` makes the change. `apply()` is both in one call. A rejected input leaves state byte-identical (`hashWorld` before == after). The server persists between the two steps.
 - **`seq` goes up by exactly one per accepted input.**
 - **Events describe every change.** Clients mirror the world from events alone, without re-running rules. If you change state, emit an event for it.
 - **State is plain JSON data.** Records, arrays, numbers, strings. No `Map`, classes, or `undefined` values, so `canonicalJson`/`hashWorld`/`cloneWorld` stay exact.
@@ -22,6 +22,6 @@ The rules engine. If a rule decides what's allowed in the world, it lives here a
 ## Adding a command
 
 1. Add it to `Command` in `types.ts`, plus any new `WorldEvent` and `RejectionCode`.
-2. Implement the case in `apply.ts`: validate everything, then mutate, then return events.
+2. Implement the case in `check()` in `apply.ts`: validate everything and return a rejection, or return a closure that mutates and returns events. Do all reads in the check, not in the closure.
 3. Test accept and every rejection path in `apply.test.ts`, plus a replay check if it touches new state.
 4. Expose it in `protocol/` (schema + `SKILL.md`) and render its events in `client/src/mirror.ts`.
