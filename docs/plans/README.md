@@ -1,6 +1,9 @@
-# Roadmap
+# Plans and roadmap
 
-Each phase ends with a playable milestone and a public devlog. Details per phase live in [vision.md](vision.md#13-roadmap); this page tracks status.
+Each phase ends with a playable milestone and a public devlog. This page tracks status.
+
+- [founding-plan.md](founding-plan.md): the original full plan (phase details in section 13).
+- [phase-1.md](phase-1.md): the current phase in detail.
 
 ## Phase 0: foundation (done)
 
@@ -10,7 +13,7 @@ Each phase ends with a playable milestone and a public devlog. Details per phase
 - [x] Agent operating layer: `AGENTS.md` per folder, knowledge base, Claude Code skills
 - [x] RFC 0001: Phase 1 prototype
 
-## Phase 1: prototype (in progress)
+## Phase 1: prototype (in progress, [details](phase-1.md))
 
 Goal: "is it fun to exist here?" Walk around, chat, claim a plot, place blocks. Usable on a phone.
 
@@ -19,7 +22,7 @@ Goal: "is it fun to exist here?" Walk around, chat, claim a plot, place blocks. 
 - [x] Server: sessions, rate limits, presence, JSONL persistence with replay
 - [x] Mobile client: canvas world, d-pad, tap to walk, build mode, chat
 - [ ] Deploy terrakin.org (needs a hosting decision; proxy-aware rate limits first)
-- [x] Skill file onboarding: interview, character, plot, starter home, routines ([RFC 0002](rfcs/0002-muse-onboarding.md))
+- [x] Skill file onboarding: interview, character, plot, starter home, routines ([RFC 0002](../rfcs/0002-muse-onboarding.md))
 - [ ] Owner note on residents ("Ryan's muse, loves gardens")
 - [ ] Read-only resident page for owners to see and share their plot
 - [ ] Hearths: place your home marker on your plot, respawn there

@@ -4,7 +4,7 @@ How we work. This is the document to read on day one, whether you're a person or
 
 ## What we're building
 
-Terrakin is an open-source persistent world for humans and agents: claim a plot, build a hearth, trade, delve, battle, or hang out. It has to be fun on a phone, and every number it shows has to be true. The full picture is in [vision.md](vision.md).
+Terrakin is an open-source persistent world for humans and agents: claim a plot, build a hearth, trade, delve, battle, or hang out. It has to be fun on a phone, and every number it shows has to be true. Why it exists: [mission.md](../mission.md). What it is: [vision.md](vision.md).
 
 ## Who's here
 
@@ -29,7 +29,7 @@ These are the habits that keep a project healthy when many hands, human and AI, 
 
 ## How work flows
 
-1. **Pick something.** Check the [roadmap](roadmap.md), open issues, and the latest [handoff](knowledge/INDEX.md#handoffs).
+1. **Pick something.** Check the [plans and roadmap](plans/README.md), open issues, and the latest [handoff](knowledge/INDEX.md#handoffs).
 2. **Big or small?** Small (bug, docs, contained feature): go. Big (new system, protocol change, economy, storage, security model): write an [RFC](rfcs/README.md) first.
 3. **Build it.** Follow the `AGENTS.md` for each folder you touch. Run `pnpm verify` before pushing.
 4. **Open a PR.** Fill in the template. CI must be green. Security-sensitive areas (auth, economy, sim core, protocol) need two maintainer reviews.
@@ -65,7 +65,7 @@ Agents can carry real work end to end here. To make that work well:
 
 ## Voice and style
 
-- Plain words from the [terminology table](vision.md#3-terminology-no-game-knowledge-required). If a stranger wouldn't understand it, rename it.
+- Plain words from the [terminology table](plans/founding-plan.md#3-terminology-no-game-knowledge-required). If a stranger wouldn't understand it, rename it.
 - No em dashes in user-facing copy or docs.
 - Be kind and direct in reviews. Critique the code, not the person (or agent).
 

@@ -59,4 +59,4 @@ A resident is online while they have an open socket, or while they've made a RES
 
 ## Not built yet
 
-Postgres, Redis, horizontal scaling, account-bound identity, coins, and everything after Phase 1. Optional wallets come after that. See [roadmap.md](roadmap.md).
+Postgres, Redis, horizontal scaling, account-bound identity, coins, and everything after Phase 1. Optional wallets come after that. See [plans/](plans/README.md).

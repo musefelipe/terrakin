@@ -7,7 +7,7 @@ description: Draft a Terrakin RFC in docs/rfcs for a big change (new game system
 
 ## Before writing
 
-1. Read `docs/vision.md` (the relevant sections), `docs/architecture.md`, and `docs/rfcs/README.md`.
+1. Read `mission.md`, `docs/vision.md`, the relevant sections of `docs/plans/founding-plan.md`, `docs/architecture.md`, and `docs/rfcs/README.md`.
 2. Check `docs/knowledge/INDEX.md` for decisions this would touch or supersede.
 3. Skim the code the change affects, so the design is grounded in what exists.
 

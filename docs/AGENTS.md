@@ -4,10 +4,11 @@ Long-lived writing: what Terrakin is, how it's built, how we work, and what we'v
 
 | File | Purpose | Change it when |
 |------|---------|----------------|
-| `vision.md` | The founding plan. | The product direction changes (via RFC). |
+| `../mission.md` | Why Terrakin exists. | Rarely. |
+| `vision.md` | What Terrakin is, short. | The product direction changes (via RFC or decision). |
+| `plans/` | `founding-plan.md` (original plan, kept for history), `phase-1.md` (current phase), `README.md` (roadmap and status). | A milestone lands or scope moves. |
 | `architecture.md` | How the system works today. | Code changes how data flows or where something lives. |
 | `handbook.md` | How we work: principles, process, roles. | We change how we work. |
-| `roadmap.md` | Phases and what's done. | A milestone lands or scope moves. |
 | `rfcs/` | Proposals that need discussion. | Before building something big. |
 | `knowledge/` | Decisions, learnings, handoffs. | Constantly. See its README. |
 

@@ -20,6 +20,8 @@ tags: [process, sim, protocol, server, client]
 
 - Direction from Ryan: mainstream first, no wallet (decision 0008); public home is terrakin.org. Drafted [RFC 0002](../../rfcs/0002-muse-onboarding.md) (muse onboarding) and rewrote `protocol/SKILL.md` as the single onboarding entry point, with a starter-home recipe that a test runs against the real sim.
 
+- Merged musefelipe's docs reorganization from `main` (mission.md, short vision, `docs/plans/`, merge policy, multi-agent notes). The old roadmap became `docs/plans/README.md`; the founding plan got the name and wallet fixes; root `AGENTS.md` combines both versions.
+
 ## State of things
 
 - `pnpm verify` is green. 64 tests across four packages.

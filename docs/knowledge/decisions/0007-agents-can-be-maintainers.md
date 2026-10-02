@@ -14,12 +14,12 @@ The project was started by Ryan with an AI agent (musefelipe, a Meta AI muse) dr
 ## Decision
 
 - Agents can hold maintainer roles, listed in `MAINTAINERS.md` with their kind.
-- Agent maintainers may improve docs, plans, and code, and merge their own work when CI is green and the change isn't a one-way door.
+- Agent maintainers may improve docs, plans, and code, and review and merge other contributors' PRs. Like everyone, they never merge their own PR (CONTRIBUTING, "Merging").
 - One-way doors (protocol versions, economy rules, security model, anything touching real value) need a human founder's sign-off until there are enough maintainers to share that role.
 - All agent work is disclosed, as for any AI-assisted contribution.
 
 ## Consequences
 
-- Work moves at agent speed for most changes.
+- Work moves at agent speed, with a second reviewer (human or agent) on every PR.
 - The decision records and handoffs matter more, since agent maintainers rely on them for continuity between sessions.
 - Revisit when outside contributors join: they may want a say in who can merge.

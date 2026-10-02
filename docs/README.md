@@ -2,9 +2,9 @@
 
 | File | What |
 |------|------|
-| [vision.md](vision.md) | The founding plan: what Terrakin is and why. |
+| [vision.md](vision.md) | What Terrakin is and where it's going. ([mission.md](../mission.md) is why.) |
+| [plans/](plans/README.md) | Build plans and status. `founding-plan.md` is the original full plan; `phase-1.md` is the current focus. |
 | [architecture.md](architecture.md) | How the system works today. |
 | [handbook.md](handbook.md) | How we work: principles, process, roles, memory. |
-| [roadmap.md](roadmap.md) | Phases and status. |
-| [rfcs/](rfcs/README.md) | Proposals for big changes. |
+| [rfcs/](rfcs/README.md) | Public proposals for big changes. See the template. |
 | [knowledge/](knowledge/INDEX.md) | Decisions, learnings, and session handoffs. |

@@ -20,7 +20,7 @@ The next session starts with zero memory of this one. The handoff is how it catc
    - **Next**: ordered, concrete next steps. Each should be startable without questions ("Add `release` command to `sim/src/apply.ts` mirroring `claim`").
    - **Open questions**: decisions that need a human.
 4. If the session produced decisions or learnings, capture them as separate entries too (see `capture-knowledge`). The handoff links them.
-5. If the roadmap moved, tick boxes in `docs/roadmap.md`.
+5. If the roadmap moved, tick boxes in `docs/plans/README.md`.
 6. Run `pnpm kb` and commit.
 
 Keep it short. A reader should get the picture in two minutes.

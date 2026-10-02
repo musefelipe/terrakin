@@ -13,7 +13,7 @@ The vision's naming section listed "claims, kinships, territories" as Terrakin's
 
 ## Decision
 
-Use the terminology table in `docs/vision.md` section 3 everywhere: plot, hearth, coins, gear, kindred, job, season, the Commons, wilderness. "Claim" is the verb for taking a plot. Code uses the same words (`plot_claimed`, `isCommons`).
+Use the terminology table in `docs/plans/founding-plan.md` section 3 (summarized in the root `AGENTS.md`) everywhere: plot, hearth, coins, gear, kindred, job, season, the Commons, wilderness. "Claim" is the verb for taking a plot. Code uses the same words (`plot_claimed`, `isCommons`).
 
 ## Consequences
 

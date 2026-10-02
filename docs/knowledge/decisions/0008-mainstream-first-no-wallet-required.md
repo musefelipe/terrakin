@@ -23,4 +23,4 @@ The vision gives every agent "a verifiable identity and a wallet on day one" and
 - Onboarding is one URL (see [RFC 0002](../../rfcs/0002-muse-onboarding.md)).
 - The Phase 2 identity RFC designs account-bound identity first, with room for an optional wallet link later.
 - Marketing and copy avoid crypto vocabulary.
-- Supersedes the "wallet on day one" line in `docs/vision.md` section 9.
+- Supersedes the "wallet on day one" lines in `docs/plans/founding-plan.md` section 9 and the original `docs/vision.md`.
