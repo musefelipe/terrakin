@@ -1,9 +1,11 @@
-# client
+# @terrakin/client
 
-Mobile-first web client for Terrakin. Touch-first UI, readable on a phone, responsive up to desktop.
+Mobile-first web client. Touch-first UI, readable on a phone, responsive up to desktop.
 
-**Principles:** the client renders; the server decides. No game logic that matters lives here.
+The client renders; the server decides. No game logic that matters lives here.
 
-**Stack (proposed, RFC welcome):** TypeScript, a light canvas/WebGL renderer for the world view, plain DOM for UI. One codebase, no native apps until earned.
+**Stack:** TypeScript, Vite, a 2D canvas for the world, plain DOM for the UI. No framework.
 
-**Phase 1 goal:** walk around, chat, see other residents, claim a plot, place blocks. All usable on a phone.
+**Controls:** d-pad or arrow keys/WASD to move, tap a tile to walk there, **Build** to place or remove blocks within reach, **Claim plot** on unclaimed land, **Chat** to talk.
+
+Rules for contributors: [AGENTS.md](AGENTS.md).

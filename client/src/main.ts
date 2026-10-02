@@ -1,0 +1,233 @@
+import type { Action, ServerMessage } from "@terrakin/protocol";
+import type { BlockKind, Direction } from "@terrakin/sim";
+import { type Camera, fitScale, screenToTile, stepToward } from "./camera";
+import { Mirror } from "./mirror";
+import { Connection, savedToken } from "./net";
+import { blockColor, render } from "./render";
+import "./style.css";
+
+const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+const canvas = $<HTMLCanvasElement>("world");
+const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+const joinForm = $<HTMLFormElement>("join");
+const joinError = $("join-error");
+const hud = $("hud");
+const status = $("status");
+const toast = $("toast");
+const chatPanel = $("chat");
+const chatLog = $<HTMLOListElement>("chat-log");
+const chatInput = $<HTMLInputElement>("chat-input");
+const buildButton = $("build");
+const palette = $("palette");
+
+let conn: Connection | undefined;
+let mirror: Mirror | undefined;
+let me: string | undefined;
+let buildMode = false;
+let block: BlockKind = "wood";
+let walkTarget: { x: number; y: number } | undefined;
+let pendingMove: string | undefined;
+const cam: Camera = { cx: 0, cy: 0, scale: 32, width: 0, height: 0 };
+
+// ---------- connection ----------
+
+function connect(identity: { token: string } | { name: string; kind: "human" }) {
+  conn?.close();
+  conn = new Connection(identity, onMessage, (s) => {
+    status.textContent =
+      s === "online" ? "" : s === "connecting" ? "Connecting…" : "Offline, retrying…";
+  });
+}
+
+function onMessage(msg: ServerMessage) {
+  switch (msg.type) {
+    case "welcome":
+      me = msg.residentId;
+      mirror = new Mirror(msg.world);
+      joinForm.hidden = true;
+      hud.hidden = false;
+      snapCamera();
+      break;
+    case "event":
+      if (mirror && !mirror.apply(msg)) {
+        // Out of step with the server. Reload the truth rather than guessing.
+        void fetch("/v1/world")
+          .then((r) => r.json())
+          .then((w) => {
+            mirror = new Mirror(w);
+          });
+      }
+      break;
+    case "chat":
+      addChat(msg.from.name, msg.from.kind, msg.text);
+      break;
+    case "ack":
+      if (msg.id === pendingMove) pendingMove = undefined;
+      break;
+    case "error":
+      if (msg.id === pendingMove) {
+        pendingMove = undefined;
+        walkTarget = undefined;
+      }
+      if (msg.error.code === "unauthorized" || msg.error.code === "invalid_name") {
+        conn?.close();
+        hud.hidden = true;
+        joinForm.hidden = false;
+        joinError.textContent = msg.error.code === "invalid_name" ? msg.error.message : "";
+        return;
+      }
+      showToast(msg.error.message);
+      break;
+  }
+}
+
+function act(action: Action): string | undefined {
+  return conn?.send(action);
+}
+
+// ---------- chat (untrusted text: textContent only, never innerHTML) ----------
+
+function addChat(name: string, kind: "human" | "agent", text: string) {
+  const li = document.createElement("li");
+  const who = document.createElement("b");
+  who.textContent = kind === "agent" ? `${name} ⚙` : name;
+  li.append(who, document.createTextNode(` ${text}`));
+  chatLog.append(li);
+  while (chatLog.children.length > 100) chatLog.firstElementChild?.remove();
+  chatLog.scrollTop = chatLog.scrollHeight;
+  if (chatPanel.hidden) showToast(`${who.textContent}: ${text}`);
+}
+
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+function showToast(text: string) {
+  toast.textContent = text;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
+}
+
+// ---------- input ----------
+
+function step(dir: Direction) {
+  walkTarget = undefined;
+  act({ type: "move", dir });
+}
+
+function self() {
+  return me ? mirror?.residents.get(me) : undefined;
+}
+
+canvas.addEventListener("pointerdown", (e) => {
+  const r = self();
+  if (!mirror || !r) return;
+  const tile = screenToTile(cam, e.clientX, e.clientY);
+  if (buildMode) {
+    const hasBlock = mirror.blocks.has(`${tile.x},${tile.y}`);
+    act(hasBlock ? { type: "remove", ...tile } : { type: "place", ...tile, block });
+    return;
+  }
+  walkTarget = tile;
+});
+
+for (const button of document.querySelectorAll<HTMLButtonElement>(".dpad button")) {
+  button.addEventListener("click", () => step(button.dataset.dir as Direction));
+}
+
+const KEYS: Record<string, Direction> = {
+  ArrowUp: "n",
+  ArrowDown: "s",
+  ArrowLeft: "w",
+  ArrowRight: "e",
+  w: "n",
+  s: "s",
+  a: "w",
+  d: "e",
+};
+window.addEventListener("keydown", (e) => {
+  if (document.activeElement instanceof HTMLInputElement) return;
+  const dir = KEYS[e.key];
+  if (dir) {
+    e.preventDefault();
+    step(dir);
+  }
+});
+
+$("claim").addEventListener("click", () => act({ type: "claim" }));
+
+buildButton.addEventListener("click", () => {
+  buildMode = !buildMode;
+  buildButton.setAttribute("aria-pressed", String(buildMode));
+  palette.hidden = !buildMode;
+});
+
+for (const button of palette.querySelectorAll<HTMLButtonElement>("button")) {
+  const kind = button.dataset.block as BlockKind;
+  button.style.background = blockColor(kind);
+  button.addEventListener("click", () => {
+    block = kind;
+    for (const b of palette.querySelectorAll("button"))
+      b.classList.toggle("selected", b === button);
+  });
+  if (kind === block) button.classList.add("selected");
+}
+
+$("chat-toggle").addEventListener("click", () => {
+  chatPanel.hidden = !chatPanel.hidden;
+  if (!chatPanel.hidden) chatInput.focus();
+});
+
+$<HTMLFormElement>("chat-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = chatInput.value.trim();
+  if (text) act({ type: "chat", text });
+  chatInput.value = "";
+});
+
+joinForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = $<HTMLInputElement>("join-name").value.trim();
+  if (name) connect({ name, kind: "human" });
+});
+
+// ---------- loop ----------
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  cam.width = window.innerWidth;
+  cam.height = window.innerHeight;
+  cam.scale = fitScale(cam.width, cam.height);
+  canvas.width = Math.floor(cam.width * dpr);
+  canvas.height = Math.floor(cam.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function snapCamera() {
+  const r = self();
+  if (r) Object.assign(cam, { cx: r.x, cy: r.y });
+}
+
+let lastWalk = 0;
+function frame(t: number) {
+  const r = self();
+  if (r) {
+    cam.cx += (r.x - cam.cx) * 0.2;
+    cam.cy += (r.y - cam.cy) * 0.2;
+    // Tap-to-walk: one step at a time, each waiting for the server to confirm the last.
+    if (walkTarget && !pendingMove && t - lastWalk > 110) {
+      const dir = stepToward(r, walkTarget);
+      if (dir) pendingMove = act({ type: "move", dir });
+      else walkTarget = undefined;
+      lastWalk = t;
+    }
+  }
+  if (mirror) render(ctx, { mirror, me, cam, buildMode });
+  requestAnimationFrame(frame);
+}
+
+window.addEventListener("resize", resize);
+resize();
+requestAnimationFrame(frame);
+
+const token = savedToken();
+if (token) connect({ token });

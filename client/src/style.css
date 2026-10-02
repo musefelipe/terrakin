@@ -1,0 +1,236 @@
+:root {
+  --bg: #1d2b22;
+  --panel: rgba(20, 30, 24, 0.88);
+  --text: #f4f1de;
+  --accent: #ffd166;
+  --muted: #b8c4b0;
+  --radius: 14px;
+  --tap: 52px;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--panel);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:active,
+button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+input {
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 1px solid #3c5446;
+  border-radius: var(--radius);
+  background: #10180f;
+  font-size: 16px; /* 16px stops iOS from zooming on focus. */
+}
+
+.panel {
+  background: var(--panel);
+  border-radius: var(--radius);
+  backdrop-filter: blur(6px);
+}
+
+.join {
+  position: fixed;
+  inset: auto 16px 50% 16px;
+  transform: translateY(50%);
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.join h1 {
+  margin: 0;
+}
+
+.join p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.error {
+  color: #ff8a80;
+  min-height: 1.2em;
+}
+
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+.status {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.dpad {
+  position: absolute;
+  left: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template: repeat(3, var(--tap)) / repeat(3, var(--tap));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.dpad button {
+  padding: 0;
+}
+
+.dpad [data-dir="n"] {
+  grid-area: 1 / 2;
+}
+.dpad [data-dir="w"] {
+  grid-area: 2 / 1;
+}
+.dpad [data-dir="e"] {
+  grid-area: 2 / 3;
+}
+.dpad [data-dir="s"] {
+  grid-area: 3 / 2;
+}
+
+.actions {
+  position: absolute;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(2, 44px);
+  gap: 6px;
+}
+
+.palette button {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: 3px solid transparent;
+}
+
+.palette button.selected {
+  border-color: var(--accent);
+}
+
+.chat {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  max-width: 480px;
+  max-height: 45vh;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.chat-log {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+
+.chat-log li {
+  padding: 2px 0;
+}
+
+#chat-form {
+  display: flex;
+  gap: 8px;
+}
+
+#chat-form input {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  top: calc(48px + env(safe-area-inset-top));
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  overflow-wrap: anywhere;
+}
+
+.chat:not([hidden]) ~ .toast {
+  top: calc(45vh + 24px + env(safe-area-inset-top));
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+.hud [hidden],
+.panel[hidden] {
+  display: none;
+}
