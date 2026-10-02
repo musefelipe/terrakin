@@ -30,7 +30,7 @@ tags: [process, sim, protocol, server, client]
 
 ## Next
 
-1. Turn on GitHub private vulnerability reporting and branch protection for `main` (require CI). Repo settings, needs a maintainer.
+1. Confirm GitHub private vulnerability reporting is on (Settings, Security), and that the `main` rule requires the CI checks (`verify`, `e2e`, `secrets`). `main` already rejects direct pushes.
 2. Deploy terrakin.org: the image and checklist are ready (`Dockerfile`, `docs/deploy.md`); pick a host and follow the checklist.
 3. Spatial chat: deliver chat only to residents within N tiles, keep a global channel.
 4. Start the Phase 2 RFCs: account-bound identity (no wallet), Postgres schema, economy rules.
