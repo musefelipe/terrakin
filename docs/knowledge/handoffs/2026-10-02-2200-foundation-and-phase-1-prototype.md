@@ -22,6 +22,12 @@ tags: [process, sim, protocol, server, client]
 
 - Merged musefelipe's docs reorganization from `main` (mission.md, short vision, `docs/plans/`, merge policy, multi-agent notes). The old roadmap became `docs/plans/README.md`; the founding plan got the name and wallet fixes; root `AGENTS.md` combines both versions.
 
+## Repo moved
+
+- The repo is now [ryanio/terrakin](https://github.com/ryanio/terrakin) (transferred from musefelipe/terrakin). Old URLs redirect, but links in SECURITY.md, MAINTAINERS.md, and the issue template config now point at the new home. CODEOWNERS lists `@ryanio @musefelipe` for code and `@ryanio` alone for `/.github/`.
+- PR #12 (hearths, appearance, Dockerfile, phone e2e) is green and carries this move. Its `.github/rulesets/protect-main.json` is the intended `main` ruleset.
+- Ruleset fix: the live `protect main` ruleset required `CI / verify` and `CI / secrets`, which never report, because Actions names the checks `verify`, `e2e`, and `secrets`. The required checks must be exactly those three names. Agent sessions can't edit rulesets, so a repo admin sets it under Settings, Rules, Rulesets, protect main.
+
 ## State of things
 
 - `pnpm verify` is green (77 tests) and `pnpm e2e` passes.
