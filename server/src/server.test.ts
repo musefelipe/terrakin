@@ -10,7 +10,7 @@ import { createApp } from "./app";
 import { RateLimiters } from "./rate-limit";
 import { JsonlStore, MemoryStore, readJsonl, type Store } from "./store";
 import { cleanText } from "./text";
-import { WorldService } from "./world-service";
+import { DAY_LENGTH_MS, WorldService } from "./world-service";
 
 // 3x3 plots of 4 tiles. Spawn (6,6) is in the Commons, plot (1,1).
 const CONFIG: WorldConfig = {
@@ -85,6 +85,12 @@ describe("REST", () => {
       ok: false,
       error: { code: "plot_owned" },
     });
+  });
+
+  it("anchors day/night time in the world snapshot", async () => {
+    const { base } = await start(new MemoryStore(), { now: () => 1_700_000_000_000 });
+    const world = (await api(base, "GET", "/v1/world")).body;
+    expect(world.time).toEqual({ nowMs: 1_700_000_000_000, dayLengthMs: DAY_LENGTH_MS });
   });
 
   it("rejects bad tokens, bad bodies, and bad names", async () => {
@@ -309,3 +315,4 @@ describe("cleanText", () => {
     expect(cleanText(" a\u0000b\nc​d‮e  ")).toBe("a b c d e");
   });
 });
+
