@@ -18,4 +18,5 @@ export {
   plotsOwnedBy,
   spawnTile,
   validateConfig,
+  withinEarshot,
 } from "./world";

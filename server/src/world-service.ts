@@ -1,10 +1,14 @@
 import { createHash, randomBytes } from "node:crypto";
-import type { Action, ErrorCode, ServerMessage, WorldSnapshot } from "@terrakin/protocol";
+import type {
+  Action,
+  ChatChannel,
+  ErrorCode,
+  ServerMessage,
+  WorldSnapshot,
+} from "@terrakin/protocol";
 import { PROTOCOL_VERSION } from "@terrakin/protocol";
 import {
-  CHAT_EARSHOT,
   type Command,
-  chebyshev,
   commonsPlot,
   DEFAULT_CONFIG,
   hashWorld,
@@ -17,12 +21,13 @@ import {
   type WorldConfig,
   type WorldEvent,
   type WorldState,
+  withinEarshot,
 } from "@terrakin/sim";
 import type { Store } from "./store";
 import { cleanText } from "./text";
 
 export type ActResult =
-  | { ok: true; seq: number; events: WorldEvent[] }
+  | { ok: true; seq: number; events: WorldEvent[]; heard?: number }
   | { ok: false; error: { code: ErrorCode; message: string } };
 
 type Listener = (message: ServerMessage) => void;
@@ -119,7 +124,7 @@ export class WorldService {
 
   act(residentId: string, action: Action): ActResult {
     this.touch(residentId);
-    if (action.type === "chat") return this.chat(residentId, action.text);
+    if (action.type === "chat") return this.chat(residentId, action.text, action.channel);
     if (action.type === "profile") {
       const { type, ...profile } = action;
       return this.run({ actor: residentId, command: { type, ...cleanProfile(profile) } });
@@ -127,7 +132,7 @@ export class WorldService {
     return this.run({ actor: residentId, command: action satisfies Command });
   }
 
-  private chat(residentId: string, raw: string): ActResult {
+  private chat(residentId: string, raw: string, channel: ChatChannel = "nearby"): ActResult {
     const r = this.state.residents[residentId];
     if (!r?.online)
       return { ok: false, error: { code: "not_joined", message: "Join the world first." } };
@@ -139,16 +144,20 @@ export class WorldService {
       trust: "untrusted",
       from: { id: r.id, name: r.name, kind: r.kind },
       text,
+      channel,
       seq: this.state.seq,
     };
-    // Spatial chat: only residents standing within earshot hear it, the speaker included.
+    // Only residents with a live connection receive chat: online, and nearby unless it's `world`.
+    // The speaker always gets their own message back.
+    let heard = 0;
     for (const [id, set] of this.listeners) {
       const other = this.state.residents[id];
-      if (other?.online && chebyshev(r, other) <= CHAT_EARSHOT) {
-        for (const listener of set) listener(message);
-      }
+      if (!other?.online) continue;
+      if (channel === "nearby" && !withinEarshot(r, other)) continue;
+      if (id !== residentId) heard++;
+      for (const listener of set) listener(message);
     }
-    return { ok: true, seq: this.state.seq, events: [] };
+    return { ok: true, seq: this.state.seq, events: [], heard };
   }
 
   /**
@@ -214,7 +223,10 @@ export class WorldService {
     set.add(listener);
     return () => {
       set.delete(listener);
-      if (set.size === 0) this.listeners.delete(residentId);
+      // Only drop the entry if it's still ours: a newer socket may have made a fresh set.
+      if (set.size === 0 && this.listeners.get(residentId) === set) {
+        this.listeners.delete(residentId);
+      }
     };
   }
 

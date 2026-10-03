@@ -349,8 +349,13 @@ describe("spatial chat", () => {
     expect(chats(heardB)).toHaveLength(1);
 
     // Bee walks 20 tiles east, out of earshot (12 tiles). Ada's chat no longer reaches her.
-    for (let i = 0; i < 20; i++) service.act(b.residentId, { type: "move", dir: "e" });
-    service.act(a.residentId, { type: "chat", text: "can you hear me" });
+    for (let i = 0; i < 20; i++) {
+      expect(service.act(b.residentId, { type: "move", dir: "e" }).ok).toBe(true);
+    }
+    expect(service.act(a.residentId, { type: "chat", text: "can you hear me" })).toMatchObject({
+      ok: true,
+      heard: 0,
+    });
     expect(chats(heardA)).toHaveLength(2);
     expect(chats(heardB)).toHaveLength(1);
 
@@ -359,8 +364,54 @@ describe("spatial chat", () => {
     expect(chats(heardB)).toHaveLength(2);
     expect(chats(heardA)).toHaveLength(2);
 
+    // The world channel reaches everyone online, wherever they stand.
+    expect(
+      service.act(a.residentId, { type: "chat", text: "market at noon", channel: "world" }),
+    ).toMatchObject({ ok: true, heard: 1 });
+    expect(chats(heardB).at(-1)).toMatchObject({ text: "market at noon", channel: "world" });
+    expect(chats(heardA)).toHaveLength(3);
+
     unsubA();
     unsubB();
+  });
+});
+
+describe("spatial chat after home", () => {
+  it("uses where you stand now, so a jump home changes who hears you", () => {
+    const service = new WorldService({ store: new MemoryStore() });
+    const a = service.createSession({ name: "Ada", kind: "human" });
+    const b = service.createSession({ name: "Bee", kind: "agent" });
+    if (!a.ok || !b.ok || !a.residentId || !b.residentId) throw new Error("join failed");
+    const heardB: ServerMessage[] = [];
+    service.subscribe(b.residentId, (m) => heardB.push(m));
+    // A second socket for Ada that closes must not affect her first one.
+    const heardA: ServerMessage[] = [];
+    service.subscribe(a.residentId, (m) => heardA.push(m));
+    const unsubSecond = service.subscribe(a.residentId, () => {});
+    unsubSecond();
+    unsubSecond();
+
+    // Ada walks to plot (0,0), claims it, sets a hearth, and walks back to Bee in the Commons.
+    const ada = a.residentId;
+    const go = (dir: "n" | "s" | "e" | "w", n: number) => {
+      for (let i = 0; i < n; i++) expect(service.act(ada, { type: "move", dir }).ok).toBe(true);
+    };
+    const start = service.state.residents[ada];
+    if (!start) throw new Error("no resident");
+    const { x, y } = start;
+    go("w", x - 2);
+    go("n", y - 2);
+    expect(service.act(ada, { type: "claim" }).ok).toBe(true);
+    expect(service.act(ada, { type: "set_hearth", x: 2, y: 2 }).ok).toBe(true);
+    go("e", x - 2);
+    go("s", y - 2);
+    expect(service.act(ada, { type: "chat", text: "near" })).toMatchObject({ heard: 1 });
+    expect(service.act(ada, { type: "home" }).ok).toBe(true);
+    expect(service.act(ada, { type: "chat", text: "far" })).toMatchObject({ heard: 0 });
+    expect(heardB.filter((m) => m.type === "chat").map((m) => m.type === "chat" && m.text)).toEqual(
+      ["near"],
+    );
+    expect(heardA.filter((m) => m.type === "chat")).toHaveLength(2);
   });
 });
 
