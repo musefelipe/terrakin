@@ -63,10 +63,23 @@ export const ResidentView = z.object({
   online: z.boolean(),
 });
 
+/**
+ * The server's clock, so every client shows day and night in step with the server.
+ * Presentation only: nothing here feeds the sim, so replay stays deterministic.
+ */
+export const WorldTime = z.object({
+  /** Server clock (ms since epoch) when the snapshot was built. */
+  nowMs: z.number().int(),
+  /** How long one full day lasts (ms). */
+  dayLengthMs: z.number().int().positive(),
+});
+export type WorldTime = z.infer<typeof WorldTime>;
+
 export const WorldSnapshot = z.object({
   v: z.literal(PROTOCOL_VERSION),
   seq: z.number().int(),
   hash: z.string(),
+  time: WorldTime,
   config: z.object({
     width: z.number().int(),
     height: z.number().int(),
