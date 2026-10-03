@@ -333,8 +333,8 @@ describe("WebSocket", () => {
 describe("spatial chat", () => {
   it("reaches nearby residents but not far ones", () => {
     const service = new WorldService({ store: new MemoryStore() });
-    const a = service.createSession("Ada", "human");
-    const b = service.createSession("Bee", "agent");
+    const a = service.createSession({ name: "Ada", kind: "human" });
+    const b = service.createSession({ name: "Bee", kind: "agent" });
     if (!a.ok || !b.ok || !a.residentId || !b.residentId) throw new Error("join failed");
     const heardA: ServerMessage[] = [];
     const heardB: ServerMessage[] = [];
