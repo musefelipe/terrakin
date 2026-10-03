@@ -2,7 +2,9 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Action, ErrorCode, ServerMessage, WorldSnapshot } from "@terrakin/protocol";
 import { PROTOCOL_VERSION } from "@terrakin/protocol";
 import {
+  CHAT_EARSHOT,
   type Command,
+  chebyshev,
   commonsPlot,
   DEFAULT_CONFIG,
   hashWorld,
@@ -42,7 +44,8 @@ export class WorldService {
   readonly state: WorldState;
   private readonly store: Store;
   private readonly sessions = new Map<string, string>(); // tokenHash -> residentId
-  private readonly listeners = new Set<Listener>();
+  /** residentId -> their live listeners. Chat goes only to residents within earshot. */
+  private readonly listeners = new Map<string, Set<Listener>>();
   private readonly lastSeen = new Map<string, number>();
   private readonly sockets = new Map<string, number>(); // residentId -> open socket count
   private readonly idleTimeoutMs: number;
@@ -115,13 +118,20 @@ export class WorldService {
     const text = cleanText(raw);
     if (text === "")
       return { ok: false, error: { code: "bad_request", message: "Empty message." } };
-    this.broadcast({
+    const message: ServerMessage = {
       type: "chat",
       trust: "untrusted",
       from: { id: r.id, name: r.name, kind: r.kind },
       text,
       seq: this.state.seq,
-    });
+    };
+    // Spatial chat: only residents standing within earshot hear it, the speaker included.
+    for (const [id, set] of this.listeners) {
+      const other = this.state.residents[id];
+      if (other?.online && chebyshev(r, other) <= CHAT_EARSHOT) {
+        for (const listener of set) listener(message);
+      }
+    }
     return { ok: true, seq: this.state.seq, events: [] };
   }
 
@@ -179,13 +189,21 @@ export class WorldService {
 
   // ---------- views ----------
 
-  subscribe(listener: Listener): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+  subscribe(residentId: string, listener: Listener): () => void {
+    let set = this.listeners.get(residentId);
+    if (!set) {
+      set = new Set();
+      this.listeners.set(residentId, set);
+    }
+    set.add(listener);
+    return () => {
+      set.delete(listener);
+      if (set.size === 0) this.listeners.delete(residentId);
+    };
   }
 
   private broadcast(message: ServerMessage) {
-    for (const listener of this.listeners) listener(message);
+    for (const set of this.listeners.values()) for (const listener of set) listener(message);
   }
 
   hash(): string {

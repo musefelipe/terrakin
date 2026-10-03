@@ -285,6 +285,39 @@ describe("WebSocket", () => {
   });
 });
 
+describe("spatial chat", () => {
+  it("reaches nearby residents but not far ones", () => {
+    const service = new WorldService({ store: new MemoryStore() });
+    const a = service.createSession("Ada", "human");
+    const b = service.createSession("Bee", "agent");
+    if (!a.ok || !b.ok || !a.residentId || !b.residentId) throw new Error("join failed");
+    const heardA: ServerMessage[] = [];
+    const heardB: ServerMessage[] = [];
+    const unsubA = service.subscribe(a.residentId, (m) => heardA.push(m));
+    const unsubB = service.subscribe(b.residentId, (m) => heardB.push(m));
+    const chats = (inbox: ServerMessage[]) => inbox.filter((m) => m.type === "chat");
+
+    // Both spawn together in the Commons: everyone hears it, including the speaker.
+    service.act(a.residentId, { type: "chat", text: "hello" });
+    expect(chats(heardA)).toHaveLength(1);
+    expect(chats(heardB)).toHaveLength(1);
+
+    // Bee walks 20 tiles east, out of earshot (12 tiles). Ada's chat no longer reaches her.
+    for (let i = 0; i < 20; i++) service.act(b.residentId, { type: "move", dir: "e" });
+    service.act(a.residentId, { type: "chat", text: "can you hear me" });
+    expect(chats(heardA)).toHaveLength(2);
+    expect(chats(heardB)).toHaveLength(1);
+
+    // Bee still hears her own message out there, and Ada does not hear Bee.
+    service.act(b.residentId, { type: "chat", text: "loud and alone" });
+    expect(chats(heardB)).toHaveLength(2);
+    expect(chats(heardA)).toHaveLength(2);
+
+    unsubA();
+    unsubB();
+  });
+});
+
 describe("persistence", () => {
   it("replays the log on restart and keeps tokens valid", async () => {
     const dir = mkdtempSync(join(tmpdir(), "terrakin-"));

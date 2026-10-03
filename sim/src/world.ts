@@ -9,6 +9,14 @@ export const DEFAULT_CONFIG: WorldConfig = {
   reach: 3,
 };
 
+/**
+ * How far chat travels, in tiles. A resident hears a message when the speaker is
+ * within CHAT_EARSHOT tiles (Chebyshev distance), themselves included. Chat delivery
+ * is a server concern, not world state, so this stays a constant: it never changes
+ * how logs replay, and tuning it needs no data migration.
+ */
+export const CHAT_EARSHOT = 12;
+
 export function validateConfig(config: WorldConfig): void {
   const { width, height, plotSize, maxPlotsPerResident, reach } = config;
   for (const [name, value] of Object.entries({ width, height, plotSize, maxPlotsPerResident })) {
