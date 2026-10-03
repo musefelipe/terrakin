@@ -30,7 +30,7 @@ tags: [process, sim, protocol, server, client]
 
 ## State of things
 
-- `pnpm verify` is green (77 tests) and `pnpm e2e` passes.
+- `pnpm verify` is green (80 tests) and `pnpm e2e` passes.
 - The prototype runs locally (`pnpm dev`) and in a single process (`pnpm start`). Nothing is deployed.
 - `pnpm e2e` runs a Playwright smoke test at phone size in CI.
 

@@ -135,6 +135,7 @@ export const REJECTION_CODES = [
   "tile_occupied",
   "no_block",
   "no_hearth",
+  "already_home",
 ] as const;
 export type RejectionCode = (typeof REJECTION_CODES)[number];
 

@@ -41,6 +41,30 @@ describe("Mirror", () => {
     expect(m.blocks.get("1,1")).toBe("leaf");
   });
 
+  it("mirrors profile changes and hearths", () => {
+    const m = new Mirror(snapshot);
+    const events = [
+      {
+        seq: 4,
+        event: {
+          type: "profile_changed",
+          residentId: "a",
+          color: "plum",
+          shape: "diamond",
+          note: "builds lighthouses",
+        },
+      },
+      { seq: 5, event: { type: "hearth_set", residentId: "a", x: 1, y: 2 } },
+    ] as const;
+    for (const e of events) expect(m.apply(e)).toBe("applied");
+    expect(m.residents.get("a")).toMatchObject({
+      color: "plum",
+      shape: "diamond",
+      note: "builds lighthouses",
+      hearth: { x: 1, y: 2 },
+    });
+  });
+
   it("ignores stale events and reports gaps without applying them", () => {
     const m = new Mirror(snapshot);
     expect(m.apply({ seq: 2, event: { type: "left", residentId: "a" } })).toBe("stale");

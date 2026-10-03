@@ -93,6 +93,7 @@ describe("REST", () => {
       name: "Wren",
       kind: "agent",
       color: "leaf",
+      shape: "round",
       note: "loves\u202e gardens",
     });
     expect(service.state.residents[body.residentId]).toMatchObject({

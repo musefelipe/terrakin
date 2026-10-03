@@ -256,6 +256,12 @@ input {
   opacity: 1;
 }
 
+/* Text another resident wrote. Visibly not from the game itself. */
+.toast.player {
+  border-left: 4px solid var(--muted);
+  font-style: italic;
+}
+
 .hud [hidden],
 .panel[hidden] {
   display: none;
