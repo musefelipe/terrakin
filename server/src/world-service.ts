@@ -35,6 +35,12 @@ export interface WorldServiceOptions {
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
 /**
+ * One full day/night cycle. Short enough that a playtest sees the whole arc,
+ * long enough that night feels like night. Tunable; clients read it from the snapshot.
+ */
+export const DAY_LENGTH_MS = 10 * 60_000;
+
+/**
  * Owns the one authoritative world. Every change goes through `act` or `join`/`leave`,
  * which run the sim, persist the accepted input, and broadcast the resulting events.
  */
@@ -202,6 +208,8 @@ export class WorldService {
       v: PROTOCOL_VERSION,
       seq: state.seq,
       hash: this.hash(),
+      // The sim never sees a clock; this is presentation state, anchored by the server.
+      time: { nowMs: this.now(), dayLengthMs: DAY_LENGTH_MS },
       config: { ...state.config },
       commons: commonsPlot(state.config),
       residents: Object.values(state.residents).map((r) => ({ ...r })),
