@@ -1,9 +1,9 @@
 import { type Action, type ServerMessage, WorldSnapshot } from "@terrakin/protocol";
-import type { BlockKind, Direction } from "@terrakin/sim";
+import { type BlockKind, type Direction, RESIDENT_COLORS, type ResidentColor } from "@terrakin/sim";
 import { type Camera, fitScale, screenToTile, stepToward } from "./camera";
 import { Mirror } from "./mirror";
 import { Connection, savedToken } from "./net";
-import { blockColor, render } from "./render";
+import { blockColor, HEARTH_COLOR, RESIDENT_COLOR_HEX, render } from "./render";
 import "./style.css";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -25,7 +25,8 @@ let conn: Connection | undefined;
 let mirror: Mirror | undefined;
 let me: string | undefined;
 let buildMode = false;
-let block: BlockKind = "wood";
+/** Selected build tool: a block, or the hearth marker. */
+let block: BlockKind | "hearth" = "wood";
 let walkTarget: { x: number; y: number } | undefined;
 let pendingMove: string | undefined;
 let resyncing = false;
@@ -33,7 +34,9 @@ const cam: Camera = { cx: 0, cy: 0, scale: 32, width: 0, height: 0 };
 
 // ---------- connection ----------
 
-function connect(identity: { token: string } | { name: string; kind: "human" }) {
+function connect(
+  identity: { token: string } | { name: string; kind: "human"; color: ResidentColor },
+) {
   conn?.close();
   conn = new Connection(identity, onMessage, (s) => {
     status.textContent =
@@ -141,7 +144,14 @@ canvas.addEventListener("pointerdown", (e) => {
   const tile = screenToTile(cam, e.clientX, e.clientY);
   if (buildMode) {
     const hasBlock = mirror.blocks.has(`${tile.x},${tile.y}`);
-    act(hasBlock ? { type: "remove", ...tile } : { type: "place", ...tile, block });
+    if (block === "hearth") act({ type: "set_hearth", ...tile });
+    else act(hasBlock ? { type: "remove", ...tile } : { type: "place", ...tile, block });
+    return;
+  }
+  // Tapping someone shows who they are. Names and notes are untrusted: textContent only.
+  const other = mirror.residentAt(tile.x, tile.y);
+  if (other && other.id !== me) {
+    showToast(other.note ? `${other.name}: ${other.note}` : other.name);
     return;
   }
   walkTarget = tile;
@@ -179,8 +189,8 @@ buildButton.addEventListener("click", () => {
 });
 
 for (const button of palette.querySelectorAll<HTMLButtonElement>("button")) {
-  const kind = button.dataset.block as BlockKind;
-  button.style.background = blockColor(kind);
+  const kind = button.dataset.block as BlockKind | "hearth";
+  button.style.background = kind === "hearth" ? HEARTH_COLOR : blockColor(kind);
   button.addEventListener("click", () => {
     block = kind;
     for (const b of palette.querySelectorAll("button"))
@@ -188,6 +198,11 @@ for (const button of palette.querySelectorAll<HTMLButtonElement>("button")) {
   });
   if (kind === block) button.classList.add("selected");
 }
+
+$("home").addEventListener("click", () => {
+  walkTarget = undefined;
+  act({ type: "home" });
+});
 
 $("chat-toggle").addEventListener("click", () => {
   chatPanel.hidden = !chatPanel.hidden;
@@ -201,10 +216,26 @@ $<HTMLFormElement>("chat-form").addEventListener("submit", (e) => {
   chatInput.value = "";
 });
 
+let color: ResidentColor =
+  RESIDENT_COLORS[Math.floor(Math.random() * RESIDENT_COLORS.length)] ?? "sun";
+const swatches = $("join-color");
+for (const c of RESIDENT_COLORS) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.setAttribute("aria-label", c);
+  b.style.background = RESIDENT_COLOR_HEX[c];
+  b.classList.toggle("selected", c === color);
+  b.addEventListener("click", () => {
+    color = c;
+    for (const s of swatches.children) s.classList.toggle("selected", s === b);
+  });
+  swatches.append(b);
+}
+
 joinForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = $<HTMLInputElement>("join-name").value.trim();
-  if (name) connect({ name, kind: "human" });
+  if (name) connect({ name, kind: "human", color });
 });
 
 // ---------- loop ----------

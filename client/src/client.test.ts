@@ -9,7 +9,20 @@ const snapshot: WorldSnapshot = {
   hash: "x",
   config: { width: 12, height: 12, plotSize: 4, maxPlotsPerResident: 1, reach: 2 },
   commons: { px: 1, py: 1 },
-  residents: [{ id: "a", name: "Ada", kind: "human", x: 6, y: 6, online: true }],
+  residents: [
+    {
+      id: "a",
+      name: "Ada",
+      kind: "human",
+      color: "sun",
+      shape: "round",
+      note: "",
+      x: 6,
+      y: 6,
+      online: true,
+      hearth: null,
+    },
+  ],
   plots: [],
   blocks: [],
 };
