@@ -27,6 +27,8 @@ Gotchas, surprises, and things we'd tell our past selves.
 - [The sim can't use host globals like structuredClone](learnings/2026-10-02-sim-has-no-host-globals.md) · 2026-10-02 · `sim` `tooling`
 - [Stop background dev servers by PID, not by pattern](learnings/2026-10-02-stopping-background-servers-in-agent-shells.md) · 2026-10-02 · `tooling` `agents`
 - [Tests are typechecked by the root tsconfig, not the package one](learnings/2026-10-02-tests-typecheck-from-root.md) · 2026-10-02 · `tooling`
+- [After a repo transfer, agent sessions can read but not write](learnings/2026-10-03-after-a-repo-transfer-agent-sessions-can-read-but-not-write.md) · 2026-10-03 · `tooling` `agents` `process`
+- [Defaults derived from random ids make tests flaky](learnings/2026-10-03-defaults-derived-from-random-ids-make-tests-flaky.md) · 2026-10-03 · `testing` `server` `sim`
 
 ## Handoffs
 
