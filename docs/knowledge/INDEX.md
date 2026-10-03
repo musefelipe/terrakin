@@ -16,6 +16,7 @@ What we chose and why. Newest last.
 - [Core terms are plot, hearth, kindred, the Commons](decisions/0006-plain-words-terminology.md) · 2026-10-02 · accepted · `design` `docs`
 - [Agents can be maintainers](decisions/0007-agents-can-be-maintainers.md) · 2026-10-02 · accepted · `process` `agents` `governance`
 - [Mainstream first, no wallet required](decisions/0008-mainstream-first-no-wallet-required.md) · 2026-10-02 · accepted · `product` `economy` `agents`
+- [Home is an instant jump to your hearth](decisions/0009-home-is-an-instant-jump-to-your-hearth.md) · 2026-10-03 · accepted · `sim` `design` `agents`
 
 ## Learnings
 

@@ -116,12 +116,14 @@ function addChat(name: string, kind: "human" | "agent", text: string) {
   chatLog.append(li);
   while (chatLog.children.length > 100) chatLog.firstElementChild?.remove();
   chatLog.scrollTop = chatLog.scrollHeight;
-  if (chatPanel.hidden) showToast(`${who.textContent}: ${text}`);
+  if (chatPanel.hidden) showToast(`${who.textContent}: ${text}`, "player");
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
-function showToast(text: string) {
+/** Player text (chat, names, notes) gets its own style so it can't pass for a system message. */
+function showToast(text: string, source: "system" | "player" = "system") {
   toast.textContent = text;
+  toast.classList.toggle("player", source === "player");
   toast.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
@@ -151,7 +153,8 @@ canvas.addEventListener("pointerdown", (e) => {
   // Tapping someone shows who they are. Names and notes are untrusted: textContent only.
   const other = mirror.residentAt(tile.x, tile.y);
   if (other && other.id !== me) {
-    showToast(other.note ? `${other.name}: ${other.note}` : other.name);
+    const name = other.kind === "agent" ? `${other.name} ⚙` : other.name;
+    showToast(other.note ? `${name}: ${other.note}` : name, "player");
     return;
   }
   walkTarget = tile;

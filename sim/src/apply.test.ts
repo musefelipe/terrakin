@@ -205,6 +205,10 @@ describe("determinism", () => {
       ]).flat(),
       { actor: "ada", command: { type: "claim" } },
       { actor: "ada", command: { type: "place", x: 3, y: 3, block: "leaf" } },
+      { actor: "ada", command: { type: "set_hearth", x: 2, y: 2 } },
+      { actor: "ada", command: { type: "move", dir: "e" } },
+      { actor: "ada", command: { type: "home" } },
+      { actor: "ada", command: { type: "profile", color: "plum", note: "x".repeat(80) } },
       { actor: "bot", command: { type: "claim" } }, // Rejected: Commons. Must not enter the log.
       { actor: "bot", command: { type: "leave" } },
     ];
@@ -304,6 +308,22 @@ describe("hearth", () => {
     expect(code({ type: "set_hearth", x: 0, y: 0 })).toBe("tile_occupied");
     run(state, "ada", { type: "set_hearth", x: 1, y: 1 });
     expect(code({ type: "place", x: 1, y: 1, block: "stone" })).toBe("tile_occupied");
+  });
+
+  it("rejects no-ops so they never reach the log, and rejections change nothing", () => {
+    const state = homeowner();
+    run(state, "ada", { type: "set_hearth", x: 1, y: 1 });
+    const before = hashWorld(state);
+    const code = (command: Command) => rejectionCode(apply(state, { actor: "ada", command }));
+    expect(code({ type: "set_hearth", x: 1, y: 1 })).toBe("already_home");
+    expect(code({ type: "set_hearth", x: -1, y: 1 })).toBe("out_of_bounds");
+    run(state, "ada", { type: "home" });
+    const home = hashWorld(state);
+    expect(code({ type: "home" })).toBe("already_home");
+    expect(hashWorld(state)).toBe(home);
+    expect(before).not.toBe(home);
+    run(state, "ada", { type: "leave" });
+    expect(code({ type: "home" })).toBe("not_joined");
   });
 
   it("returns a resident to their hearth when their spot was built over", () => {

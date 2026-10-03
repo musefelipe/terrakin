@@ -201,6 +201,10 @@ function check(state: WorldState, actor: string, command: Command): Mutation | P
         return reject("not_your_plot", "Your hearth has to be on your own plot.");
       }
       if (isSolid(state, x, y)) return reject("tile_occupied", "A block is there.");
+      // Like profile, a no-op would still cost a permanent log line and a broadcast.
+      if (me.hearth?.x === x && me.hearth.y === y) {
+        return reject("already_home", "That's already your hearth.");
+      }
       return () => {
         me.hearth = { x, y };
         return [{ type: "hearth_set", residentId: actor, x, y }];
@@ -210,6 +214,8 @@ function check(state: WorldState, actor: string, command: Command): Mutation | P
     case "home": {
       const hearth = me.hearth;
       if (!hearth) return reject("no_hearth", "Set a hearth on your plot first.");
+      if (me.x === hearth.x && me.y === hearth.y)
+        return reject("already_home", "You're already home.");
       return () => {
         me.x = hearth.x;
         me.y = hearth.y;
