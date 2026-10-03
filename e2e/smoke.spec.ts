@@ -9,6 +9,21 @@ async function tileSize(page: Page) {
   return { vp, scale: Math.max(16, Math.floor(Math.min(vp.width, vp.height) / 13)) };
 }
 
+/**
+ * The camera eases toward the player (20% per frame). Taps below assume it's centered, so wait
+ * enough frames for it to land: 0.8^40 is under a thousandth of a tile.
+ */
+async function settleCamera(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((done) => {
+        let frames = 40;
+        const tick = () => (--frames <= 0 ? done() : requestAnimationFrame(tick));
+        requestAnimationFrame(tick);
+      }),
+  );
+}
+
 async function health(page: Page) {
   return (await page.request.get("/v1/health")).json();
 }
@@ -46,6 +61,7 @@ test("a human can join, claim, build, and chat safely next to an agent", async (
   await page.click("#build");
   await page.click('[data-block="stone"]');
   const { vp, scale } = await tileSize(page);
+  await settleCamera(page);
   await page.mouse.click(vp.width / 2 - scale, vp.height / 2 - scale);
   await expect
     .poll(async () => (await page.request.get("/v1/world").then((r) => r.json())).blocks)
@@ -53,6 +69,7 @@ test("a human can join, claim, build, and chat safely next to an agent", async (
 
   // Set a hearth where we stand, step away, and come home.
   await page.click('[data-block="hearth"]');
+  await settleCamera(page);
   await page.mouse.click(vp.width / 2, vp.height / 2);
   const me = async () => {
     const world = await page.request.get("/v1/world").then((r) => r.json());
