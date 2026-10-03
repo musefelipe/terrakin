@@ -1,6 +1,7 @@
 import type { BlockKind } from "@terrakin/sim";
 import { type Camera, tileToScreen } from "./camera";
 import type { Mirror } from "./mirror";
+import { nightAmount } from "./time";
 
 const BLOCK_COLORS: Record<BlockKind, string> = {
   wood: "#a87a4f",
@@ -25,9 +26,14 @@ export interface RenderState {
   me: string | undefined;
   cam: Camera;
   buildMode: boolean;
+  /** Phase of the day, 0 to 1. Absent when the server gave no time anchor. */
+  dayPhase?: number;
 }
 
-export function render(ctx: CanvasRenderingContext2D, { mirror, me, cam, buildMode }: RenderState) {
+export function render(
+  ctx: CanvasRenderingContext2D,
+  { mirror, me, cam, buildMode, dayPhase }: RenderState,
+) {
   const { width, height, scale } = cam;
   const { config, commons } = mirror;
   ctx.fillStyle = "#1d2b22";
@@ -94,4 +100,14 @@ export function render(ctx: CanvasRenderingContext2D, { mirror, me, cam, buildMo
     ctx.fillStyle = "#fff";
     ctx.fillText(r.kind === "agent" ? `${r.name} ⚙` : r.name, sx, sy - scale * 0.45);
   }
+
+  // Night falls over the whole canvas. Capped so the world stays readable at midnight.
+  if (dayPhase !== undefined) {
+    const night = nightAmount(dayPhase);
+    if (night > 0) {
+      ctx.fillStyle = `rgba(10, 14, 44, ${(0.45 * night).toFixed(3)})`;
+      ctx.fillRect(0, 0, width, height);
+    }
+  }
 }
+
