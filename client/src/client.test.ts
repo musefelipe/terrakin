@@ -75,7 +75,7 @@ describe("day and night", () => {
   it("is darkest at midnight and bright at noon", () => {
     expect(nightAmount(0.25)).toBe(0);
     expect(nightAmount(0.75)).toBe(1);
-    expect(nightAmount(0)).toBe(0.5);
+    expect(nightAmount(0)).toBeCloseTo(0.5, 10);
     expect(nightAmount(0)).toBe(nightAmount(0.5));
   });
 });
