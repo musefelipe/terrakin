@@ -111,8 +111,8 @@ describe("WorldSnapshot time anchor", () => {
     expect(WorldSnapshot.safeParse(good).success).toBe(true);
     const { time, ...noTime } = good;
     expect(WorldSnapshot.safeParse(noTime).success).toBe(false);
-    expect(
-      WorldSnapshot.safeParse({ ...good, time: { nowMs: 1, dayLengthMs: 0 } }).success,
-    ).toBe(false);
+    expect(WorldSnapshot.safeParse({ ...good, time: { nowMs: 1, dayLengthMs: 0 } }).success).toBe(
+      false,
+    );
   });
 });
