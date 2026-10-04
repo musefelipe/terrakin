@@ -249,7 +249,8 @@ function frame(t: number) {
   const phase = dayAnchor
     ? dayPhase(dayAnchor.nowMs + (performance.now() - dayAnchor.receivedAt), dayAnchor.dayLengthMs)
     : undefined;
-  if (mirror) render(ctx, { mirror, me, cam, buildMode, dayPhase: phase });
+  if (mirror)
+    render(ctx, { mirror, me, cam, buildMode, ...(phase === undefined ? {} : { dayPhase: phase }) });
   requestAnimationFrame(frame);
 }
 
