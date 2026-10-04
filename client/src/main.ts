@@ -259,4 +259,3 @@ requestAnimationFrame(frame);
 
 const token = savedToken();
 if (token) connect({ token });
-
