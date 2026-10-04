@@ -250,7 +250,13 @@ function frame(t: number) {
     ? dayPhase(dayAnchor.nowMs + (performance.now() - dayAnchor.receivedAt), dayAnchor.dayLengthMs)
     : undefined;
   if (mirror)
-    render(ctx, { mirror, me, cam, buildMode, ...(phase === undefined ? {} : { dayPhase: phase }) });
+    render(ctx, {
+      mirror,
+      me,
+      cam,
+      buildMode,
+      ...(phase === undefined ? {} : { dayPhase: phase }),
+    });
   requestAnimationFrame(frame);
 }
 
