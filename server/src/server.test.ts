@@ -315,4 +315,3 @@ describe("cleanText", () => {
     expect(cleanText(" a\u0000b\nc​d‮e  ")).toBe("a b c d e");
   });
 });
-
